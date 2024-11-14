@@ -590,3 +590,5 @@ def test_database_operations():
 # Run main function
 main()
 
+print('Hello World')
+
