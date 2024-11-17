@@ -659,7 +659,7 @@ def advisor_add_drop_student():
 # Requirement 4:
 # Adding duplicate is not allowed
 
-# Covered by the add to database method (Checks to see if entry with primary key already exists)
+# Covered by the add to database method in database operations class (Checks to see if entry with primary key already exists)
 
 ##########################################################################################################################
 ##########################################################################################################################
