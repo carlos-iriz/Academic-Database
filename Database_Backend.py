@@ -16,79 +16,106 @@ cursor = None
 # Has User as parent class and then specific types as children
 
 class User:
-    def __init__(self, user_id):
-        self.user_id = user_id
-        self.user_type = self.__class__.__name__
-
-    @classmethod
-    def from_database(cls, conn, user_id):
-        """Creates an instance of the subclass and populates its fields from the database"""
+    def __init__(self, conn, user_id):
+        """Initialize a User object by querying the database with the user_id."""
         cursor = conn.cursor()
-        query = f"SELECT * FROM {cls.__name__} WHERE {cls.primary_key} = %s"
-        cursor.execute(query, (user_id,))
+        cursor.execute(
+            """
+            SELECT user_id, username, email, role_id, role_specific_id 
+            FROM UserInfo 
+            WHERE user_id = %s
+            """,
+            (user_id,)
+        )
         result = cursor.fetchone()
 
         if result:
-            return cls(*result)
+            self.user_id, self.username, self.email, self.role_id, self.role_specific_id = result
         else:
-            raise ValueError(f"No record found in {cls.__name__} for ID {user_id}")
+            raise ValueError(f"No record found in UserInfo for user_id {user_id}")
 
-class Students(User):
-    primary_key = 'stud_id'
+    @classmethod
+    def from_database(cls, conn, user_id):
+        """Factory method to create a User object from the database."""
+        return cls(conn, user_id)
 
+
+# Students class
+class Students:
     def __init__(self, conn, stud_id):
-        super().__init__(stud_id)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Students WHERE stud_id = %s", (stud_id,))
+        cursor.execute("SELECT stud_id, gender, major FROM Students WHERE stud_id = %s", (stud_id,))
         result = cursor.fetchone()
 
         if result:
             self.stud_id, self.gender, self.major = result
         else:
-            raise ValueError(f"No record found in Students for ID {stud_id}")
+            raise ValueError(f"No record found in Students for stud_id {stud_id}")
 
-class Instructors(User):
-    primary_key = 'instructor_id'
+    @classmethod
+    def from_database(cls, conn, stud_id):
+        return cls(conn, stud_id)
 
+
+# Instructors class
+class Instructors:
     def __init__(self, conn, instructor_id):
-        super().__init__(instructor_id)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Instructors WHERE instructor_id = %s", (instructor_id,))
+        cursor.execute(
+            "SELECT instructor_id, dept_id, hired_sem, instructor_phone FROM Instructors WHERE instructor_id = %s",
+            (instructor_id,)
+        )
         result = cursor.fetchone()
 
         if result:
             self.instructor_id, self.dept_id, self.hired_sem, self.instructor_phone = result
         else:
-            raise ValueError(f"No record found in Instructors for ID {instructor_id}")
+            raise ValueError(f"No record found in Instructors for instructor_id {instructor_id}")
 
-class Staff(User):
-    primary_key = 'staff_id'
+    @classmethod
+    def from_database(cls, conn, instructor_id):
+        return cls(conn, instructor_id)
 
+
+# Staff class
+class Staff:
     def __init__(self, conn, staff_id):
-        super().__init__(staff_id)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Staff WHERE staff_id = %s", (staff_id,))
+        cursor.execute("SELECT staff_id, dept_id, phone FROM Staff WHERE staff_id = %s", (staff_id,))
         result = cursor.fetchone()
 
         if result:
             self.staff_id, self.dept_id, self.phone = result
         else:
-            raise ValueError(f"No record found in Staff for ID {staff_id}")
+            raise ValueError(f"No record found in Staff for staff_id {staff_id}")
 
-class Advisors(User):
-    primary_key = 'adv_id'
+    @classmethod
+    def from_database(cls, conn, staff_id):
+        return cls(conn, staff_id)
 
+
+# Advisors class
+class Advisors:
     def __init__(self, conn, adv_id):
-        super().__init__(adv_id)
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Advisors WHERE adv_id = %s", (adv_id,))
+        cursor.execute(
+            """
+            SELECT adv_id, total_hours_reg, major_offered, dept_id, advisor_phone, building, office 
+            FROM Advisors WHERE adv_id = %s
+            """,
+            (adv_id,)
+        )
         result = cursor.fetchone()
 
         if result:
-            (self.adv_id, self.total_hours_reg, self.major_offered, 
-             self.dept_id, self.advisor_phone, self.building, self.office) = result
+            (self.adv_id, self.total_hours_reg, self.major_offered, self.dept_id,
+             self.advisor_phone, self.building, self.office) = result
         else:
-            raise ValueError(f"No record found in Advisors for ID {adv_id}")
+            raise ValueError(f"No record found in Advisors for adv_id {adv_id}")
+
+    @classmethod
+    def from_database(cls, conn, adv_id):
+        return cls(conn, adv_id)
 
 ########################################################################################################################
 ########################################################################################################################
@@ -343,7 +370,10 @@ def main():
         # Creates tables in database only if the tables are not already in database
 
         create_students_table = '''
-            CREATE TABLE IF NOT EXISTS Students(stud_id VARCHAR(9) PRIMARY KEY, gender CHAR(1), major VARCHAR(10)
+            CREATE TABLE IF NOT EXISTS Students (
+                stud_id SERIAL PRIMARY KEY,
+                gender VARCHAR(10),
+                major VARCHAR(100)
         );'''
 
         create_courses_table = '''
@@ -356,36 +386,92 @@ def main():
         );'''
 
         create_departments_table = '''
-            CREATE TABLE IF NOT EXISTS Departments(dept_id VARCHAR(10) PRIMARY KEY, name VARCHAR(50)
+            CREATE TABLE IF NOT EXISTS Departments(
+                dept_id VARCHAR(10) PRIMARY KEY, 
+                name VARCHAR(50)
         );'''
 
         create_instructors_table = '''
-            CREATE TABLE IF NOT EXISTS Instructors(instructor_id VARCHAR(9) PRIMARY KEY, dept_id VARCHAR(9), hired_sem CHAR(5), instructor_phone CHAR(4)
+            CREATE TABLE IF NOT EXISTS Instructors (
+                instructor_id SERIAL PRIMARY KEY,
+                dept_id INT,
+                hired_sem VARCHAR(50),
+                instructor_phone VARCHAR(20)
         );'''       
 
         create_staff_table = '''
-            CREATE TABLE IF NOT EXISTS Staff(staff_id VARCHAR(9) PRIMARY KEY, dept_id VARCHAR(9), phone CHAR(4)
+            CREATE TABLE IF NOT EXISTS Staff (
+                staff_id SERIAL PRIMARY KEY,
+                dept_id INT,
+                phone VARCHAR(20)
         );'''
 
         create_advisors_table = '''
-            CREATE TABLE IF NOT EXISTS Advisors(adv_id CHAR(9) PRIMARY KEY, total_hours_reg INTEGER, major_offered VARCHAR(10), dept_id VARCHAR(9), advisor_phone CHAR(4), building CHAR(1), office VARCHAR(5)
+            CREATE TABLE IF NOT EXISTS Advisors (
+                adv_id SERIAL PRIMARY KEY,
+                total_hours_reg INT,
+                major_offered VARCHAR(100),
+                dept_id INT,
+                advisor_phone VARCHAR(20),
+                building VARCHAR(50),
+                office VARCHAR(50)
         );'''
 
         create_registeredFor_table = '''
-            CREATE TABLE IF NOT EXISTS RegisteredFor(stud_id CHAR(9) PRIMARY KEY, course_prefix CHAR(3), course_number CHAR(4), year_taken CHAR(4), grade VARCHAR(10), semester CHAR(1)
+            CREATE TABLE IF NOT EXISTS RegisteredFor(
+                stud_id CHAR(9) PRIMARY KEY, 
+                course_prefix CHAR(3), 
+                course_number CHAR(4), 
+                year_taken CHAR(4), 
+                grade VARCHAR(10), 
+                semester CHAR(1)
         );'''
 
         create_teaches_table = '''
-            CREATE TABLE IF NOT EXISTS Teaches(instructor_id CHAR(9) PRIMARY KEY, course_prefix CHAR(3), course_number CHAR(4), year_taught CHAR(4), semester CHAR(1)
+            CREATE TABLE IF NOT EXISTS Teaches(instructor_id CHAR(9) PRIMARY KEY, 
+                course_prefix CHAR(3), course_number CHAR(4), 
+                year_taught CHAR(4), 
+                semester CHAR(1)
         );'''
 
+        #Uses helper table roles to determine what kind of user
+        #Add password attribute to table using encryption when you have interface!
+        #Add logic from password manager to encrypt!
         create_userInfo_table = '''
-            CREATE TABLE IF NOT EXISTS UserInfo(username VARCHAR(50) PRIMARY KEY, name VARCHAR(100), privilege VARCHAR(20)
-        );'''
+            CREATE TABLE IF NOT EXISTS Roles (
+                role_id SERIAL PRIMARY KEY,
+                role_name VARCHAR(50) UNIQUE NOT NULL
+            );
+
+            --INSERT INTO Roles (role_name) 
+            --    VALUES 
+            --        ('Student'),
+            --        ('Instructor'),
+            --        ('Advisor'),
+            --        ('Staff'),
+            --        ('System Admin');
+
+            -- Create the UserInfo table
+            CREATE TABLE IF NOT EXISTS UserInfo (
+                user_id SERIAL PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                role_id INT REFERENCES Roles(role_id) ON DELETE SET NULL,
+                role_specific_id INT -- Store ID of the role-specific table entry
+            );
+            '''
 
         create_log_table = '''
-            CREATE TABLE IF NOT EXISTS Log (entry SERIAL PRIMARY KEY, timestamp TIMESTAMPTZ NOT NULL, username VARCHAR(50) REFERENCES UserInfo(username), operationtype VARCHAR(50), old_data TEXT, new_data TEXT
-        );'''
+
+            CREATE TABLE IF NOT EXISTS Log (
+                entry SERIAL PRIMARY KEY,
+                timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                username VARCHAR(50) NOT NULL REFERENCES UserInfo(username) ON DELETE CASCADE,
+                operationtype VARCHAR(50) NOT NULL,
+                old_data TEXT,
+                new_data TEXT
+            );
+        '''
 
         create_student_course_table = '''
         CREATE TABLE IF NOT EXISTS StudentCourse (
