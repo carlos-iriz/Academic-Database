@@ -39,7 +39,6 @@ class User:
         """Factory method to create a User object from the database."""
         return cls(conn, user_id)
 
-
 # Students class
 class Students:
     def __init__(self, conn, stud_id):
@@ -49,12 +48,26 @@ class Students:
 
         if result:
             self.stud_id, self.gender, self.major = result
+            self.courses = []  # Initialize an empty list to store courses
         else:
             raise ValueError(f"No record found in Students for stud_id {stud_id}")
 
     @classmethod
     def from_database(cls, conn, stud_id):
         return cls(conn, stud_id)
+
+    def load_courses(self, conn):
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT course_code 
+            FROM StudentCourse 
+            WHERE stud_id = %s
+            """, 
+            (self.stud_id,)
+        )
+        results = cursor.fetchall()
+        self.courses = [course_code for (course_code,) in results]
 
 
 # Instructors class
@@ -69,12 +82,26 @@ class Instructors:
 
         if result:
             self.instructor_id, self.dept_id, self.hired_sem, self.instructor_phone = result
+            self.courses = []  # Initialize an empty list to store courses
         else:
             raise ValueError(f"No record found in Instructors for instructor_id {instructor_id}")
 
     @classmethod
     def from_database(cls, conn, instructor_id):
         return cls(conn, instructor_id)
+
+    def load_courses(self, conn):
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT course_code 
+            FROM InstructorCourse 
+            WHERE instructor_id = %s
+            """, 
+            (self.instructor_id,)
+        )
+        results = cursor.fetchall()
+        self.courses = [course_code for (course_code,) in results]
 
 
 # Staff class
@@ -122,15 +149,15 @@ class Advisors:
 # Remaining Tables
 
 class Courses:
-    def __init__(self, conn, course_prefix):
+    def __init__(self, conn, course_code):
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Courses WHERE course_prefix = %s", (course_prefix,))
+        cursor.execute("SELECT * FROM Courses WHERE course_code = %s", (course_code,))
         result = cursor.fetchone()
 
         if result:
-            self.course_prefix, self.course_number, self.dept_id, self.credits = result
+            (self.course_code, self.dept_id, self.credits) = result
         else:
-            raise ValueError(f"No course found with prefix {course_prefix}")
+            raise ValueError(f"No course found with prefix {course_code}")
 
     @classmethod
     def load_all_courses(cls, conn):
@@ -138,7 +165,7 @@ class Courses:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Courses")
         courses = [cls(conn, row[0]) for row in cursor.fetchall()]
-        return courses
+        return courses #Returns list of all courses in table
 
 class Departments:
     def __init__(self, conn, dept_id):
@@ -147,7 +174,7 @@ class Departments:
         result = cursor.fetchone()
 
         if result:
-            self.dept_id, self.name = result
+            (self.dept_id, self.name) = result
         else:
             raise ValueError(f"No department found with ID {dept_id}")
 
@@ -157,101 +184,116 @@ class Departments:
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Departments")
         departments = [cls(conn, row[0]) for row in cursor.fetchall()]
-        return departments
+        return departments #Returns list of all courses in table
 
 class RegisteredFor:
     def __init__(self, conn, stud_id):
-        """Load all registration records for a specific student ID."""
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM RegisteredFor WHERE stud_id = %s", (stud_id,))
-        records = cursor.fetchall()
-        
-        self.records = []
-        for record in records:
-            data = {
-                'stud_id': record[0],
-                'course_prefix': record[1],
-                'course_number': record[2],
-                'year_taken': record[3],
-                'grade': record[4],
-                'semester': record[5]
-            }
-            self.records.append(data)
+        result = cursor.fetchone()
+
+        if result:
+            (self.stud_id, self.course_code, self.year_taken, self.grade, self.semester) = result
+        else:
+            raise ValueError(f"No registration record found for student ID {stud_id}")
+
+    @classmethod
+    def load_all(cls, conn):
+        """Load all registration records from the RegisteredFor table."""
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM RegisteredFor")
+        records = [cls(conn, row[0]) for row in cursor.fetchall()]
+        return records  # Returns a list of all RegisteredFor objects
+
 
 class Teaches:
     def __init__(self, conn, instructor_id):
-        """Load all teaching records for a specific instructor ID."""
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Teaches WHERE instructor_id = %s", (instructor_id,))
-        records = cursor.fetchall()
-        
-        self.records = []
-        for record in records:
-            data = {
-                'instructor_id': record[0],
-                'course_prefix': record[1],
-                'course_number': record[2],
-                'year_taught': record[3],
-                'semester': record[4]
-            }
-            self.records.append(data)
-
-class UserInfo:
-    def __init__(self, conn, username):
-        """Load user information for a specific username."""
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM UserInfo WHERE username = %s", (username,))
         result = cursor.fetchone()
-        
+
         if result:
-            self.username, self.name, self.privilege = result
+            (self.instructor_id, self.course_code, self.year_taught, self.semester) = result
         else:
-            raise ValueError(f"No user found with username {username}")
+            raise ValueError(f"No teaching record found for instructor ID {instructor_id}")
 
     @classmethod
-    def load_all_users(cls, conn):
-        """Load all users from the UserInfo table."""
+    def load_all(cls, conn):
+        """Load all teaching records from the Teaches table."""
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM UserInfo")
-        users = [cls(conn, row[0]) for row in cursor.fetchall()]
-        return users
+        cursor.execute("SELECT * FROM Teaches")
+        records = [cls(conn, row[0]) for row in cursor.fetchall()]
+        return records  # Returns a list of all Teaches objects
+
 
 class Log:
-    def __init__(self, conn, entry=None, username=None):
+    def __init__(self, conn, entry):
         cursor = conn.cursor()
-        if entry:
-            cursor.execute("SELECT * FROM Log WHERE entry = %s", (entry,))
-            result = cursor.fetchone()
-            if result:
-                self.entry, self.timestamp, self.username, self.operationtype, self.old_data, self.new_data = result
-            else:
-                raise ValueError(f"No log entry found with entry ID {entry}")
-        elif username:
-            cursor.execute("SELECT * FROM Log WHERE username = %s", (username,))
-            self.records = cursor.fetchall()
+        cursor.execute("SELECT * FROM Log WHERE entry = %s", (entry,))
+        result = cursor.fetchone()
+
+        if result:
+            (self.entry, self.timestamp, self.username, self.operationtype, self.old_data, self.new_data) = result
         else:
-            raise ValueError("Either entry ID or username must be provided to load logs")
+            raise ValueError(f"No log entry found with entry ID {entry}")
 
     @classmethod
-    def load_all_logs(cls, conn):
+    def load_all(cls, conn):
         """Load all logs from the Log table."""
         cursor = conn.cursor()
         cursor.execute("SELECT * FROM Log")
         logs = [cls(conn, row[0]) for row in cursor.fetchall()]
-        return logs
+        return logs  # Returns a list of all Log objects
 
-# Additional classes for other added tables
+# Potentially may not need specific classes for the following two tables
+# StudentCourse table:
+# Instead make a method in student class that stores course info based on condition
+# InstructorCourse table:
+# Instead make a method in instructor class that stores course info based on condition
+
 class StudentCourse:
-    def __init__(self, conn, student_id):
+    def __init__(self, conn, stud_id, course_code, semester, year_taken):
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM StudentCourse WHERE student_id = %s", (student_id,))
-        self.records = cursor.fetchall()
+        cursor.execute("""
+            SELECT * FROM StudentCourse 
+            WHERE stud_id = %s AND course_code = %s AND semester = %s AND year_taken = %s
+        """, (stud_id, course_code, semester, year_taken))
+        result = cursor.fetchone()
+
+        if result:
+            (self.stud_id, self.course_code, self.semester, self.year_taken, self.grade) = result
+        else:
+            raise ValueError(f"No record found for student {stud_id} in course {course_code}")
+
+    @classmethod
+    def load_all(cls, conn):
+        """Load all student-course records from the StudentCourse table."""
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM StudentCourse")
+        records = [cls(conn, *row[:5]) for row in cursor.fetchall()]
+        return records  # Returns a list of all StudentCourse objects
 
 class InstructorCourse:
-    def __init__(self, conn, instructor_id):
+    def __init__(self, conn, instructor_id, course_code, semester, year_taught):
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM InstructorCourse WHERE instructor_id = %s", (instructor_id,))
-        self.records = cursor.fetchall()
+        cursor.execute("""
+            SELECT * FROM InstructorCourse 
+            WHERE instructor_id = %s AND course_code = %s AND semester = %s AND year_taught = %s
+        """, (instructor_id, course_code, semester, year_taught))
+        result = cursor.fetchone()
+
+        if result:
+            (self.instructor_id, self.course_code, self.semester, self.year_taught) = result
+        else:
+            raise ValueError(f"No record found for instructor {instructor_id} teaching course {course_code}")
+
+    @classmethod
+    def load_all(cls, conn):
+        """Load all instructor-course records from the InstructorCourse table."""
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM InstructorCourse")
+        records = [cls(conn, *row[:5]) for row in cursor.fetchall()]
+        return records  # Returns a list of all InstructorCourse objects
 
 ########################################################################################################################
 ########################################################################################################################
@@ -378,11 +420,9 @@ def main():
 
         create_courses_table = '''
             CREATE TABLE IF NOT EXISTS Courses (
-                course_prefix CHAR(3),
-                course_number CHAR(4),
+                course_code CHAR(7) PRIMARY KEY,
                 dept_id VARCHAR(9),
-                credits INTEGER,
-                PRIMARY KEY (course_prefix, course_number)
+                credits INTEGER
         );'''
 
         create_departments_table = '''
@@ -420,19 +460,18 @@ def main():
         create_registeredFor_table = '''
             CREATE TABLE IF NOT EXISTS RegisteredFor(
                 stud_id CHAR(9) PRIMARY KEY, 
-                course_prefix CHAR(3), 
-                course_number CHAR(4), 
+                course_code CHAR(7), 
                 year_taken CHAR(4), 
                 grade VARCHAR(10), 
                 semester CHAR(1)
         );'''
 
-        create_teaches_table = '''
-            CREATE TABLE IF NOT EXISTS Teaches(instructor_id CHAR(9) PRIMARY KEY, 
-                course_prefix CHAR(3), course_number CHAR(4), 
-                year_taught CHAR(4), 
-                semester CHAR(1)
-        );'''
+        # create_teaches_table = '''
+        #     CREATE TABLE IF NOT EXISTS Teaches(instructor_id CHAR(9) PRIMARY KEY, 
+        #         course_code CHAR(7),
+        #         year_taught CHAR(4), 
+        #         semester CHAR(1)
+        # );'''
 
         #Uses helper table roles to determine what kind of user
         #Add password attribute to table using encryption when you have interface!
@@ -462,7 +501,6 @@ def main():
             '''
 
         create_log_table = '''
-
             CREATE TABLE IF NOT EXISTS Log (
                 entry SERIAL PRIMARY KEY,
                 timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -474,29 +512,26 @@ def main():
         '''
 
         create_student_course_table = '''
-        CREATE TABLE IF NOT EXISTS StudentCourse (
-            stud_id CHAR(9),
-            course_prefix CHAR(3),
-            course_number CHAR(4),
-            semester CHAR(1),
-            year_taken CHAR(4),
-            grade VARCHAR(10),
-            PRIMARY KEY (stud_id, course_prefix, course_number, semester, year_taken),
-            FOREIGN KEY (stud_id) REFERENCES Students(stud_id),
-            FOREIGN KEY (course_prefix, course_number) REFERENCES Courses(course_prefix, course_number)
-        );'''
+            CREATE TABLE IF NOT EXISTS StudentCourse (
+                stud_id CHAR(9),
+                course_code CHAR(7),
+                semester CHAR(1),
+                year_taken CHAR(4),
+                grade VARCHAR(10),
+                PRIMARY KEY (stud_id, course_code, semester, year_taken),
+                FOREIGN KEY (course_code) REFERENCES Courses(course_code)
+            );'''
 
         create_instructor_course_table = '''
-        CREATE TABLE IF NOT EXISTS InstructorCourse (
-            instructor_id CHAR(9),
-            course_prefix CHAR(3),
-            course_number CHAR(4),
-            semester CHAR(1),
-            year_taught CHAR(4),
-            PRIMARY KEY (instructor_id, course_prefix, course_number, semester, year_taught),
-            FOREIGN KEY (instructor_id) REFERENCES Instructors(instructor_id),
-            FOREIGN KEY (course_prefix, course_number) REFERENCES Courses(course_prefix, course_number)
-        );'''
+            CREATE TABLE IF NOT EXISTS InstructorCourse (
+                instructor_id CHAR(9),
+                course_code CHAR(7),
+                semester CHAR(1),
+                year_taught CHAR(4),
+                PRIMARY KEY (instructor_id, course_code, semester, year_taught),
+                FOREIGN KEY (instructor_id) REFERENCES Instructors(instructor_id),
+                FOREIGN KEY (course_code) REFERENCES Courses(course_code)
+            );'''
 
         # Executes creation statements in database
         cursor = conn.cursor()
@@ -504,7 +539,6 @@ def main():
         cursor.execute(create_instructors_table)
         cursor.execute(create_departments_table)
         cursor.execute(create_registeredFor_table)
-        cursor.execute(create_teaches_table)
         cursor.execute(create_courses_table)
         cursor.execute(create_staff_table)
         cursor.execute(create_advisors_table)
@@ -610,17 +644,16 @@ def advisor_add_drop_student():
         Parameters:
         - database_operations_instance: An instance with methods to interact with the database.
         - student: An object with attributes like stud_id.
-        - course: An object with attributes like course_prefix, course_number, semester, year_taken, and grade.
+        - course: An object with attributes like course_code, semester, year_taken, and grade.
         """
         # Constructing the data to insert directly
         data = {
             'stud_id': student.stud_id,
-            'course_prefix': course.course_prefix,
-            'course_number': course.course_number,
+            'course_code': course.course_code,
             'semester': course.semester,
             'year_taken': course.year_taken,
             'grade': course.grade  # Optional, depending on whether grade is known at this stage
-        }
+            }
         
         # Inserting into 'RegisteredFor' table
         database_operations_instance.add_entry('RegisteredFor', data)
@@ -632,13 +665,12 @@ def advisor_add_drop_student():
         Parameters:
         - database_operations_instance: An instance with methods to interact with the database.
         - student: An object with attributes like stud_id.
-        - course: An object with attributes like course_prefix, course_number, semester, and year_taken.
+        - course: An object with attributes like course_code, semester, and year_taken.
         """
         # Constructing the condition for deletion directly
         conditions = {
             'stud_id': student.stud_id,
-            'course_prefix': course.course_prefix,
-            'course_number': course.course_number,
+            'course_code': course.course_code,
             'semester': course.semester,
             'year_taken': course.year_taken
         }
