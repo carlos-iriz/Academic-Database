@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User Info</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">Edit User Info</h1>
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        <form action="{{ url_for('edit_user_info') }}" method="post">
+            <div class="form-group">
+                <label for="name">Name</label>
+                <input type="text" class="form-control" id="name" name="name" value="{{ user[0] }}" required>
+            </div>
+            <div class="form-group">
+                <label for="birthday">Birthday</label>
+                <input type="date" class="form-control" id="birthday" name="birthday" value="{{ user[1] }}">
+            </div>
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="{{ user[2] }}">
+            </div>
+            <div class="form-group">
+                <label for="phone_number">Phone Number</label>
+                <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ user[3] }}">
+            </div>
+            <button type="submit" class="btn btn-primary">Update Info</button>
+        </form>
+        <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Back to Dashboard</a>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
