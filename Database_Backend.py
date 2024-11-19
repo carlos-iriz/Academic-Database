@@ -1,10 +1,10 @@
 import psycopg2
 
 # Database credentials
-hostname = '//'
+hostname = 'academic-database-main.chs4cey0uprk.us-east-2.rds.amazonaws.com'
 database = 'Academic_Database'
 username = 'postgres'
-pwd = '//'
+pwd = 'pops1234'
 port_id = 5432
 
 conn = None
@@ -427,7 +427,8 @@ def main():
                 username VARCHAR(50) UNIQUE NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
                 role VARCHAR(30) NOT NULL,
-                role_id SERIAL NOT NULL
+                role_id SERIAL NOT NULL,
+                password VARCHAR(20) NOT NULL
             );'''
 
         create_log_table = '''
