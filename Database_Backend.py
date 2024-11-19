@@ -684,44 +684,38 @@ def advisor_add_drop_student():
 
 ##########################################################################################################################
 ##########################################################################################################################
-# Requirement 3:
-# Student and instructor users of the system are authorized to view information or read data that is related to him/her only
-# def student_instructor_view():
-#     # Query to view student info from students table
-#     def view_student_info(database_operations_instance, stud_id):
-#         condition = {'stud_id': stud_id}
-#         database_operations_instance.view_entry('Students', condition)
+# # Requirement 3:
+# # Student and instructor users of the system are authorized to view information or read data that is related to him/her only
+# # def student_instructor_view():
+# #     # Query to view student info from students table
+# #     def view_student_info(database_operations_instance, stud_id):
+# #         condition = {'stud_id': stud_id}
+# #         database_operations_instance.view_entry('Students', condition)
 
-<<<<<<< HEAD
 
+# #     # Query to view Enrolled courses (StudentCourse table)
+# #     def view_student_enrolled_courses(database_operations_instance, stud_id):
+# #         condition = {'stud_id': stud_id}
+# #         database_operations_instance.view_entry('StudentCourse', condition)
 #     # Query to view Enrolled courses (StudentCourse table)
 #     def view_student_enrolled_courses(database_operations_instance, stud_id):
 #         condition = {'stud_id': stud_id}
 #         database_operations_instance.view_entry('StudentCourse', condition)
-=======
-    # Query to view Enrolled courses (StudentCourse table)
-    def view_student_enrolled_courses(database_operations_instance, stud_id):
-        condition = {'stud_id': stud_id}
-        database_operations_instance.view_entry('StudentCourse', condition)
->>>>>>> Carlos-Branch
 
-#     # Query to view instuctor info from instructors table
-#     def view_instructor_info(database_operations_instance, instructor_id):
-#         condition = {'instructor_id': instructor_id}
-#         database_operations_instance.view_entry('Instructors', condition)
+# #     # Query to view instuctor info from instructors table
+# #     def view_instructor_info(database_operations_instance, instructor_id):
+# #         condition = {'instructor_id': instructor_id}
+# #         database_operations_instance.view_entry('Instructors', condition)
 
-<<<<<<< HEAD
 
+# #     # # Query to view Enrolled courses (InstructorCourse table)
+# #     def view_instructor_courses(database_operations_instance, instructor_id):
+# #         condition = {'instructor_id': instructor_id}
+# #         database_operations_instance.view_entry('InstructorCourse', condition)
 #     # # Query to view Enrolled courses (InstructorCourse table)
 #     def view_instructor_courses(database_operations_instance, instructor_id):
 #         condition = {'instructor_id': instructor_id}
 #         database_operations_instance.view_entry('InstructorCourse', condition)
-=======
-    # # Query to view Enrolled courses (InstructorCourse table)
-    def view_instructor_courses(database_operations_instance, instructor_id):
-        condition = {'instructor_id': instructor_id}
-        database_operations_instance.view_entry('InstructorCourse', condition)
->>>>>>> Carlos-Branch
 
 ##########################################################################################################################
 ##########################################################################################################################
