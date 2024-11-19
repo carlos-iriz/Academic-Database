@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPA Calculator</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>GPA Calculator</h2>
+        <form method="POST" action="{{ url_for('gpa_calculator') }}">
+            <div class="form-group">
+                <label for="course1">Course 1:</label>
+                <input type="text" class="form-control" name="course1" required>
+            </div>
+            <div class="form-group">
+                <label for="grade1">Grade:</label>
+                <input type="text" class="form-control" name="grade1" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="course2">Course 2:</label>
+                <input type="text" class="form-control" name="course2">
+            </div>
+            <div class="form-group">
+                <label for="grade2">Grade:</label>
+                <input type="text" class="form-control" name="grade2">
+            </div>
+
+            <button type="submit" class="btn btn-primary">Calculate GPA</button>
+        </form>
+    </div>
+</body>
+</html>
