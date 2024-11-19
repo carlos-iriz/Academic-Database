@@ -14,6 +14,7 @@ cursor = None
 ########################################################################################################################
 # Classes to hold database information from user classes (Student, Instructor, Staff, Advisor)
 # Has User as parent class and then specific types as children
+# IMPORTANT AT LOG IN WE MAKE A USER OBJ AND AN OBJ THAT CORRESPONDS TO THAT SPECIFC USER IN THE TABLE IF ITS A USER TYPE IN A TABLE
 
 class User:
     def __init__(self, conn, user_id):
@@ -21,7 +22,7 @@ class User:
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT user_id, username, email, role_id, role_specific_id 
+            SELECT user_id, username, email, role, role_id 
             FROM UserInfo 
             WHERE user_id = %s
             """,
@@ -30,7 +31,7 @@ class User:
         result = cursor.fetchone()
 
         if result:
-            self.user_id, self.username, self.email, self.role_id, self.role_specific_id = result
+            self.user_id, self.username, self.email, self.role, self.role_id = result
         else:
             raise ValueError(f"No record found in UserInfo for user_id {user_id}")
 
@@ -47,7 +48,7 @@ class Students:
         result = cursor.fetchone()
 
         if result:
-            self.stud_id, self.gender, self.major = result
+            self.stud_id, self.gender, self.major, self.dept_id = result
             self.courses = []  # Initialize an empty list to store courses
         else:
             raise ValueError(f"No record found in Students for stud_id {stud_id}")
@@ -155,7 +156,7 @@ class Courses:
         result = cursor.fetchone()
 
         if result:
-            (self.course_code, self.dept_id, self.credits) = result
+            (self.course_code, self.course_name, self.dept_id, self.credits) = result
         else:
             raise ValueError(f"No course found with prefix {course_code}")
 
@@ -186,45 +187,6 @@ class Departments:
         departments = [cls(conn, row[0]) for row in cursor.fetchall()]
         return departments #Returns list of all courses in table
 
-class RegisteredFor:
-    def __init__(self, conn, stud_id):
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM RegisteredFor WHERE stud_id = %s", (stud_id,))
-        result = cursor.fetchone()
-
-        if result:
-            (self.stud_id, self.course_code, self.year_taken, self.grade, self.semester) = result
-        else:
-            raise ValueError(f"No registration record found for student ID {stud_id}")
-
-    @classmethod
-    def load_all(cls, conn):
-        """Load all registration records from the RegisteredFor table."""
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM RegisteredFor")
-        records = [cls(conn, row[0]) for row in cursor.fetchall()]
-        return records  # Returns a list of all RegisteredFor objects
-
-
-class Teaches:
-    def __init__(self, conn, instructor_id):
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Teaches WHERE instructor_id = %s", (instructor_id,))
-        result = cursor.fetchone()
-
-        if result:
-            (self.instructor_id, self.course_code, self.year_taught, self.semester) = result
-        else:
-            raise ValueError(f"No teaching record found for instructor ID {instructor_id}")
-
-    @classmethod
-    def load_all(cls, conn):
-        """Load all teaching records from the Teaches table."""
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM Teaches")
-        records = [cls(conn, row[0]) for row in cursor.fetchall()]
-        return records  # Returns a list of all Teaches objects
-
 
 class Log:
     def __init__(self, conn, entry):
@@ -245,12 +207,6 @@ class Log:
         logs = [cls(conn, row[0]) for row in cursor.fetchall()]
         return logs  # Returns a list of all Log objects
 
-# Potentially may not need specific classes for the following two tables
-# StudentCourse table:
-# Instead make a method in student class that stores course info based on condition
-# InstructorCourse table:
-# Instead make a method in instructor class that stores course info based on condition
-
 class StudentCourse:
     def __init__(self, conn, stud_id, course_code, semester, year_taken):
         cursor = conn.cursor()
@@ -261,7 +217,7 @@ class StudentCourse:
         result = cursor.fetchone()
 
         if result:
-            (self.stud_id, self.course_code, self.semester, self.year_taken, self.grade) = result
+            (self.stud_id, self.course_code, self.semester, self.year_taken, self.grade, self.credits) = result
         else:
             raise ValueError(f"No record found for student {stud_id} in course {course_code}")
 
@@ -283,7 +239,7 @@ class InstructorCourse:
         result = cursor.fetchone()
 
         if result:
-            (self.instructor_id, self.course_code, self.semester, self.year_taught) = result
+            (self.instructor_id, self.course_code, self.semester, self.year_taught, self.credits) = result
         else:
             raise ValueError(f"No record found for instructor {instructor_id} teaching course {course_code}")
 
@@ -390,7 +346,6 @@ class DatabaseOperations:
 
     #/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
 # Main function to initialize and perform database operations
 def main():
     global conn, cursor
@@ -407,20 +362,21 @@ def main():
 
         cursor = conn.cursor()
 
-
         #/////////////////////////////////////////////////////////////////////////////////////////////////////////////
         # Creates tables in database only if the tables are not already in database
 
         create_students_table = '''
             CREATE TABLE IF NOT EXISTS Students (
-                stud_id SERIAL PRIMARY KEY,
+                stud_id SERIAL PRIMARY KEY, 
                 gender VARCHAR(10),
-                major VARCHAR(100)
+                major VARCHAR(100),
+                dept_id VARCHAR(9)
         );'''
 
         create_courses_table = '''
             CREATE TABLE IF NOT EXISTS Courses (
                 course_code CHAR(7) PRIMARY KEY,
+	            course_name VARCHAR(30),
                 dept_id VARCHAR(9),
                 credits INTEGER
         );'''
@@ -433,8 +389,8 @@ def main():
 
         create_instructors_table = '''
             CREATE TABLE IF NOT EXISTS Instructors (
-                instructor_id SERIAL PRIMARY KEY,
-                dept_id INT,
+                instructor_id CHAR(9) PRIMARY KEY,
+                dept_id CHAR(5),
                 hired_sem VARCHAR(50),
                 instructor_phone VARCHAR(20)
         );'''       
@@ -442,7 +398,7 @@ def main():
         create_staff_table = '''
             CREATE TABLE IF NOT EXISTS Staff (
                 staff_id SERIAL PRIMARY KEY,
-                dept_id INT,
+                dept_id CHAR(5),
                 phone VARCHAR(20)
         );'''
 
@@ -451,54 +407,20 @@ def main():
                 adv_id SERIAL PRIMARY KEY,
                 total_hours_reg INT,
                 major_offered VARCHAR(100),
-                dept_id INT,
+                dept_id CHAR(5),
                 advisor_phone VARCHAR(20),
                 building VARCHAR(50),
                 office VARCHAR(50)
         );'''
 
-        create_registeredFor_table = '''
-            CREATE TABLE IF NOT EXISTS RegisteredFor(
-                stud_id CHAR(9) PRIMARY KEY, 
-                course_code CHAR(7), 
-                year_taken CHAR(4), 
-                grade VARCHAR(10), 
-                semester CHAR(1)
-        );'''
-
-        # create_teaches_table = '''
-        #     CREATE TABLE IF NOT EXISTS Teaches(instructor_id CHAR(9) PRIMARY KEY, 
-        #         course_code CHAR(7),
-        #         year_taught CHAR(4), 
-        #         semester CHAR(1)
-        # );'''
-
-        #Uses helper table roles to determine what kind of user
-        #Add password attribute to table using encryption when you have interface!
-        #Add logic from password manager to encrypt!
         create_userInfo_table = '''
-            CREATE TABLE IF NOT EXISTS Roles (
-                role_id SERIAL PRIMARY KEY,
-                role_name VARCHAR(50) UNIQUE NOT NULL
-            );
-
-            --INSERT INTO Roles (role_name) 
-            --    VALUES 
-            --        ('Student'),
-            --        ('Instructor'),
-            --        ('Advisor'),
-            --        ('Staff'),
-            --        ('System Admin');
-
-            -- Create the UserInfo table
             CREATE TABLE IF NOT EXISTS UserInfo (
                 user_id SERIAL PRIMARY KEY,
                 username VARCHAR(50) UNIQUE NOT NULL,
                 email VARCHAR(100) UNIQUE NOT NULL,
-                role_id INT REFERENCES Roles(role_id) ON DELETE SET NULL,
-                role_specific_id INT -- Store ID of the role-specific table entry
-            );
-            '''
+                role VARCHAR(30) NOT NULL,
+                role_id SERIAL NOT NULL
+            );'''
 
         create_log_table = '''
             CREATE TABLE IF NOT EXISTS Log (
@@ -508,8 +430,7 @@ def main():
                 operationtype VARCHAR(50) NOT NULL,
                 old_data TEXT,
                 new_data TEXT
-            );
-        '''
+            );  '''
 
         create_student_course_table = '''
             CREATE TABLE IF NOT EXISTS StudentCourse (
@@ -518,6 +439,7 @@ def main():
                 semester CHAR(1),
                 year_taken CHAR(4),
                 grade VARCHAR(10),
+	            credits INT,
                 PRIMARY KEY (stud_id, course_code, semester, year_taken),
                 FOREIGN KEY (course_code) REFERENCES Courses(course_code)
             );'''
@@ -528,6 +450,7 @@ def main():
                 course_code CHAR(7),
                 semester CHAR(1),
                 year_taught CHAR(4),
+	            credits INT,
                 PRIMARY KEY (instructor_id, course_code, semester, year_taught),
                 FOREIGN KEY (instructor_id) REFERENCES Instructors(instructor_id),
                 FOREIGN KEY (course_code) REFERENCES Courses(course_code)
@@ -538,7 +461,6 @@ def main():
         cursor.execute(create_students_table)
         cursor.execute(create_instructors_table)
         cursor.execute(create_departments_table)
-        cursor.execute(create_registeredFor_table)
         cursor.execute(create_courses_table)
         cursor.execute(create_staff_table)
         cursor.execute(create_advisors_table)
@@ -564,6 +486,8 @@ def main():
         if conn is not None:
             conn.close()
 
+##########################################################################################################################
+##########################################################################################################################
 
 # Requirement 1:
 # Staff users have permissons to add, remove, and modify entries in course, instructor, student, and (Their)department
@@ -575,45 +499,79 @@ def staff_add_remove_modify():
     and department entries within their department. Staff can only manage entries within their department.
     Args are staff user object and list containing all info you want to add to table
     """
-    def staff_add_course(database_operations_instance, course_data, staff_user):
-        course_data['department_id'] = staff_user.department_id
+
+    #
+    #REMEMEBR TO CALL LOG FUNCTION!!!!!!!!
+    #
+
+
+    def staff_add_course(database_operations_instance, course_code, course_name, credits, staff_user):
+
+        course_data = {
+            'course_code' : course_code,
+            'course_name' : course_name,
+            'dept_id': staff_user.dept_id,
+            'credits' : credits
+        }
+
         database_operations_instance.add_entry('Courses', course_data)
 
-    def staff_remove_course(database_operations_instance, course_id, staff_user):
-        condition = {'course_id': course_id, 'department_id': staff_user.department_id}
+
+    def staff_remove_course(database_operations_instance, course_code, staff_user):
+        condition = {'course_code': course_code, 'dept_id': staff_user.dept_id}
         database_operations_instance.remove_entry('Courses', condition)
 
-    def staff_modify_course(database_operations_instance, course_id, updates, staff_user):
-        condition = {'course_id': course_id, 'department_id': staff_user.department_id}
-        database_operations_instance.modify_entry('Courses', updates, condition)
+    #NEEDS SPECIAL UI INPUT
+    #Show attributes for course table
+    #Allow for them to select an attribute from drop down which is saved in "attribute"
+    #Input field to enter desired change which is stored in "modification"
+    def staff_modify_course(database_operations_instance, attribute, modification, course_code, staff_user):
+        update = {attribute:modification}
+        condition = {'course_code': course_code, 'dept_id':staff_user.dept_id} #MAY BE AN ERROR HERE BC OF SYNTAX!!!!!!! maybe comma
+        database_operations_instance.modify_entry('Courses', update, condition)
 
-    def staff_add_instructor(database_operations_instance, instructor_data, staff_user):
-        instructor_data['department_id'] = staff_user.department_id
+
+    # Semi Carlos verified but GPT Functions from here down please double check
+    def staff_add_instructor(database_operations_instance, instructor_id, hired_sem, instructor_phone, staff_user):
+        instructor_data = {
+            'instructor_id': instructor_id,
+            'dept_id': staff_user.dept_id,
+            'hired_sem': hired_sem,
+            'instructor_phone': instructor_phone
+        }
         database_operations_instance.add_entry('Instructors', instructor_data)
 
     def staff_remove_instructor(database_operations_instance, instructor_id, staff_user):
-        condition = {'instructor_id': instructor_id, 'department_id': staff_user.department_id}
+        condition = {'instructor_id': instructor_id, 'dept_id': staff_user.dept_id}
         database_operations_instance.remove_entry('Instructors', condition)
 
-    def staff_modify_instructor(database_operations_instance, instructor_id, updates, staff_user):
-        condition = {'instructor_id': instructor_id, 'department_id': staff_user.department_id}
-        database_operations_instance.modify_entry('Instructors', updates, condition)
+    def staff_modify_instructor(database_operations_instance, attribute, modification, instructor_id, staff_user):
+        update = {attribute: modification}
+        condition = {'instructor_id': instructor_id, 'dept_id': staff_user.dept_id}
+        database_operations_instance.modify_entry('Instructors', update, condition)
 
-    def staff_add_student(database_operations_instance, student_data, staff_user):
-        student_data['department_id'] = staff_user.department_id
+    def staff_add_student(database_operations_instance, stud_id, gender, major, staff_user):
+        student_data = {
+            'stud_id': stud_id,
+            'gender': gender,
+            'major': major,
+            'dept_id': staff_user.dept_id
+        }
         database_operations_instance.add_entry('Students', student_data)
 
-    def staff_remove_student(database_operations_instance, student_id, staff_user):
-        condition = {'student_id': student_id, 'department_id': staff_user.department_id}
+    def staff_remove_student(database_operations_instance, stud_id, staff_user):
+        condition = {'stud_id': stud_id, 'dept_id': staff_user.dept_id}
         database_operations_instance.remove_entry('Students', condition)
 
-    def staff_modify_student(database_operations_instance, student_id, updates, staff_user):
-        condition = {'student_id': student_id, 'department_id': staff_user.department_id}
-        database_operations_instance.modify_entry('Students', updates, condition)
+    def staff_modify_student(database_operations_instance, attribute, modification, stud_id, staff_user):
+        update = {attribute: modification}
+        condition = {'stud_id': stud_id, 'dept_id': staff_user.dept_id}
+        database_operations_instance.modify_entry('Students', update, condition)
 
+    #Double check this function please
     def staff_assign_course_to_instructor(database_operations_instance, instructor_id, course_id, staff_user):
-        instructor_condition = {'instructor_id': instructor_id, 'department_id': staff_user.department_id}
-        course_condition = {'course_id': course_id, 'department_id': staff_user.department_id}
+        instructor_condition = {'instructor_id': instructor_id, 'dept_id': staff_user.dept_id}
+        course_condition = {'course_id': course_id, 'dept_id': staff_user.dept_id}
         try:
             instructor_valid = database_operations_instance.view_entry('Instructors', instructor_condition)
             course_valid = database_operations_instance.view_entry('Courses', course_condition)
@@ -637,28 +595,41 @@ def staff_add_remove_modify():
 # Student and user object match 
 
 def advisor_add_drop_student():
-    def advisor_add_student(database_operations_instance, student, course):
+
+    # Requires UI element that only allows for advisors to view students that are in their dept then select
+    # Will be stored in student_id, function will pull student info from there
+    # Same thing for course, show courses in their dept and then 
+    # Will fulfill req that advisor can only add or drop those in dept
+    def advisor_add_student(database_operations_instance, student_id, course_code, semester, year_taken, grade):
         """
-        Adds a student to a course in the 'RegisteredFor' table.
+        Adds a student to a course in the 'StudentCourse' table.
         
         Parameters:
         - database_operations_instance: An instance with methods to interact with the database.
-        - student: An object with attributes like stud_id.
-        - course: An object with attributes like course_code, semester, year_taken, and grade.
+        - student_id: Used to pull student entry from database
+        - course_code: Used to pull course entry from database
         """
+
+        student = Students(student_id)
+        course = Courses(course_code)
+
         # Constructing the data to insert directly
         data = {
             'stud_id': student.stud_id,
             'course_code': course.course_code,
-            'semester': course.semester,
-            'year_taken': course.year_taken,
-            'grade': course.grade  # Optional, depending on whether grade is known at this stage
+            'semester': semester,
+            'year_taken': year_taken,
+            'grade': grade,
+            'credits' : course.credits
             }
         
         # Inserting into 'RegisteredFor' table
-        database_operations_instance.add_entry('RegisteredFor', data)
+        database_operations_instance.add_entry('StudentCourse', data)
 
-    def advisor_drop_student(database_operations_instance, student, course):
+    # Requires UI element that only allows for advisors to view students that are in their dept then select
+    # Will be stored in student_id, function will pull student info from there
+    # Same thing for course, show courses in their dept and then
+    def advisor_drop_student(database_operations_instance, student_id, course_code, semester, year_taken):
         """
         Removes a student from a course in the 'RegisteredFor' table.
         
@@ -667,24 +638,44 @@ def advisor_add_drop_student():
         - student: An object with attributes like stud_id.
         - course: An object with attributes like course_code, semester, and year_taken.
         """
+
         # Constructing the condition for deletion directly
         conditions = {
-            'stud_id': student.stud_id,
-            'course_code': course.course_code,
-            'semester': course.semester,
-            'year_taken': course.year_taken
+            'stud_id': student_id,
+            'course_code': course_code,
+            'semester': semester,
+            'year_taken': year_taken
         }
         
-        # Removing from 'RegisteredFor' table
-        database_operations_instance.remove_entry('RegisteredFor', conditions)
+        database_operations_instance.remove_entry('StudentCourse', conditions)
 
 
 ##########################################################################################################################
 ##########################################################################################################################
 # Requirement 3:
 # Student and instructor users of the system are authorized to view information or read data that is related to him/her only
+def student_instructor_view():
+    # Query to view student info from students table
+    def view_student_info(database_operations_instance, stud_id):
+        condition = {'stud_id': stud_id}
+        database_operations_instance.view_entry('Students', condition)
 
-# Kind of already fulfilled by the view data method
+
+    # Query to view Enrolled courses (StudentCourse table)
+    def view_student_enrolled_courses(database_operations_instance, stud_id):
+        condition = {'stud_id': stud_id}
+        database_operations_instance.view_entry('StudentCourse', condition)
+
+    # Query to view instuctor info from instructors table
+    def view_instructor_info(database_operations_instance, instructor_id):
+        condition = {'instructor_id': instructor_id}
+        database_operations_instance.view_entry('Instructors', condition)
+
+
+    # # Query to view Enrolled courses (InstructorCourse table)
+    def view_instructor_courses(database_operations_instance, instructor_id):
+        condition = {'instructor_id': instructor_id}
+        database_operations_instance.view_entry('InstructorCourse', condition)
 
 ##########################################################################################################################
 ##########################################################################################################################
@@ -699,6 +690,11 @@ def advisor_add_drop_student():
 # All data operations, including reading and writing by any users must be logged with operation time stamp, user name or ID, 
 # operation type, data affected (i.e., what data was viewed, what data was added or removed or modified. For data modified, 
 # what are its old and new value.) The read-only log must be maintained and viewable anytime by system administrator.
+
+###
+#MISSING CALLING THE FUNCTION AFTER EVERY OPERATION!!!!!!
+# CALL LOG_OPERATION FOR EVERY SINGLE FUNCTION!!!!!
+####
 
 from datetime import datetime
 
@@ -716,21 +712,22 @@ def log_operation(database_operations_instance, username, operation_type, old_da
     # Construct the log data
     log_data = {
         'timestamp': datetime.now(),  # Current timestamp
-        'username': username,        # User performing the operation
-        'operationtype': operation_type,  # Type of operation
-        'old_data': str(old_data) if old_data else None,  # Old data (if any)
-        'new_data': str(new_data) if new_data else None   # New data (if any)
+        'username': username, # User performing the operation
+        'operationtype': operation_type, # Type of operation
+        'old_data': str(old_data) if old_data else None, # Old data (if any)
+        'new_data': str(new_data) if new_data else None # New data (if any)
     }
     
     # Insert the log entry into the Log table
     database_operations_instance.add_entry('Log', log_data)
 
+# CHAT GPT PLEASE VERIFY
 def view_log(database_operations_instance):
     """
     Allows the system administrator to view all logs.
     
     Parameters:
-    - database_operations_instance: An instance of the DatabaseOperations class.
+    - database_operations_instance: An instance of the DatabaseOperations class
     """
     try:
         # Retrieve all entries from the Log table
