@@ -1,10 +1,10 @@
 import psycopg2
 
 # Database credentials
-hostname = '//'
+hostname = ''
 database = 'Academic_Database'
 username = 'postgres'
-pwd = '//'
+pwd = ''
 port_id = 5432
 
 conn = None

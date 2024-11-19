@@ -6,56 +6,107 @@ from psycopg2.extras import RealDictCursor
 import webbrowser
 import time
 
+
+
+import secrets
+
+
+
 app = Flask(__name__)
+
+app.secret_key = secrets.token_hex(16)
 
 # Database connection setup
 def get_db_connection():
     conn = psycopg2.connect(
-        host="",
+        host="academic-database-main.chs4cey0uprk.us-east-2.rds.amazonaws.com",
         database="Academic_Database",
         user="postgres",
-        password=""
+        password="pops1234"
     )
     return conn
 
 
-# check that the info inputted is valid and correct within the user table
+# # check that the info inputted is valid and correct within the user table
+# def user_info_check(username, password):
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
+    
+#     cursor.execute("""
+#     SELECT * 
+#     FROM userInfo
+#     WHERE user_id = %s AND password = %s;
+#     """, (username, password))
+    
+#     result = cursor.fetchone()
+    
+#     cursor.close()
+#     conn.close()
+    
+#     return result
+
 def user_info_check(username, password):
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
+    # Use %s for both placeholders in the SQL query (username is a string, not an integer)
     cursor.execute("""
     SELECT * 
-    FROM event_scheduling.users 
-    WHERE user_id = %s AND password = %s;
+    FROM UserInfo
+    WHERE username = %s AND password = %s;
     """, (username, password))
-    
+
     result = cursor.fetchone()
-    
+    print(f"Query result: {result}")  # Debugging the query result
+
     cursor.close()
     conn.close()
-    
+
     return result
 
-# Login page logic
+
+
+# # Login page logic
+# @app.route('/login', methods=['GET', 'POST'])
+# def login():
+#     error = None
+#     if request.method == 'POST':
+#         username = request.form['username']
+#         password = request.form['password']
+        
+#         # Check user credentials
+#         user_info = user_info_check(username, password)
+        
+#         if user_info:
+#             session['username'] = username
+#             session['user_role'] = user_info[1]  # Assuming user role is stored in column index 1
+#             session['dept_id'] = user_info[2]  # Assuming department ID is stored in column index 2
+#             return redirect(url_for('index')) 
+#         else:
+#             error = 'Invalid Credentials. Please try again.'
+#     return render_template('login.html', error=error)
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
+
         # Check user credentials
         user_info = user_info_check(username, password)
-        
+
         if user_info:
-            session['username'] = username
-            session['user_role'] = user_info[1]  # Assuming user role is stored in column index 1
-            session['dept_id'] = user_info[2]  # Assuming department ID is stored in column index 2
-            return redirect(url_for('index')) 
+            session['username'] = user_info[1]  # username is at index 1
+            session['user_role'] = user_info[3]  # role is at index 3
+            session['role_id'] = user_info[4]  # role_id is at index 4
+            return redirect(url_for('student_menu'))  # Redirect to student menu or wherever needed
         else:
             error = 'Invalid Credentials. Please try again.'
+    
     return render_template('login.html', error=error)
+
+
 
 @app.route('/admin_menu')
 def admin_menu():
@@ -184,47 +235,108 @@ def student_summary_advisor():
     # student_info = get_student_summary(session['username'])
     return render_template('student_summary_advisor.html')  # Assuming you have a student summary template
 
+# def get_student_info(student_id):
+#     conn = get_db_connection()
+#     cursor = conn.cursor(cursor_factory=RealDictCursor)
+#     cursor.execute("SELECT * FROM students WHERE student_id = %s", (student_id,))
+#     student_info = cursor.fetchone()
+#     conn.close()
+#     return student_info
+
+
+# # @app.route('/student_summary_advisor', methods=['GET'])
+# def student_summary_advisor():
+#     student_id = request.args.get('student_id')  # for query parameter in URL
+#     # or use request.form.get('student_id') if it is posted via form
+#     student_info = get_student_info(student_id)
+#     return render_template('student_summary_advisor.html', student_info=student_info)
+
 
 # User Info Route (Admin/Instructor access)
 @app.route('/user_info')
 def user_info():
-    # Fetch user info from database, this might only be accessible to admin or instructor
-    # user_info = get_user_info(session['username'])
-    return render_template('user_info.html')  # Assuming you have a user info template
+    # Example of dummy data (if you're testing and not connected to a database)
+    user_info = {
+        'user_id': '12345',
+        'full_name': 'John Doe',
+        'email': 'john.doe@example.com'
+    }
+    return render_template('user_info.html', user_info=user_info)
+ # Assuming you have a user info template
+ 
+#  @app.route('/what_if_analysis', methods=['GET', 'POST'])
+# def what_if_analysis():
+#     if request.method == 'POST':
+#         # Process What-If analysis calculations here
+#         # Scenario 1: Calculate effect on GPA with N additional courses and grades
+#         # Scenario 2: Calculate courses/grades needed to achieve desired GPA
+#         return render_template('what_if_results.html', results=calculated_data)
+#     return render_template('what_if_analysis.html')
 
-# Add test client to visit routes automatically when the app starts
-def visit_all_routes():
-    with app.test_client() as client:
-        routes = [
-            '/login',
-            '/admin_menu',
-            '/advisor_menu',
-            '/course_summary',
-            '/create_user',
-            '/department_summary',
-            '/edit_instructor_info',
-            '/edit_user',
-            '/gpa_calculator',
-            '/instructor_menu',
-            '/instructor_summary',
-            '/log',
-            '/logout',
-            '/my_courses',
-            '/my_grades',
-            '/my_info',
-            '/staff_menu',
-            '/student_info',
-            '/student_menu',
-            '/student_summary',
-            '/student_summary_advisor',
-            '/user_info'
-        ]
-        
-        for route in routes:
-            response = client.get(route)
-            print(f"Visiting {route} - Status Code: {response.status_code}")
-            # Optional: Add a delay to ensure requests don't happen too quickly
-            time.sleep(1)  # Adding 1 second delay between requests
+
+# @app.route('/gpa_summary')
+# def gpa_summary():
+#     # Fetch highest, lowest, and average GPA for each major from the database
+#     return render_template('gpa_summary.html', gpa_data=gpa_summary_data)
+
+
+# @app.route('/department_gpa_ranking')
+# def department_gpa_ranking():
+#     # Logic to fetch and rank departments by GPA
+#     return render_template('department_gpa_ranking.html', ranking=department_ranking_data)
+
+
+# @app.route('/semester_report')
+# def semester_report():
+#     # Fetch semester data for enrollments and average grades
+#     return render_template('semester_report.html', semester_data=semester_report_data)
+
+
+# @app.route('/student_credit_ranking')
+# def student_credit_ranking():
+#     # Fetch and sort student data by major and total credits
+#     return render_template('student_credit_ranking.html', student_data=student_ranking_data)
+
+
+
+# Function to open all routes in the default web browser when the app starts
+# def visit_all_routes():
+#     base_url = "http://127.0.0.1:5000"  # Adjust this if your app runs on a different host/port
+#     routes = [
+#         '/login',
+#         '/admin_menu',
+#         '/advisor_menu',
+#         '/course_summary',
+#         '/create_user',
+#         '/department_summary',
+#         '/edit_instructor_info',
+#         '/edit_user',
+#         '/gpa_calculator',
+#         '/instructor_menu',
+#         '/instructor_summary',
+#         '/log',
+#         '/logout',
+#         '/my_courses',
+#         '/my_grades',
+#         '/my_info',
+#         '/staff_menu',
+#         '/student_info',
+#         '/student_menu',
+#         '/student_summary',
+#         '/student_summary_advisor',
+#         '/user_info'
+#     ]
+
+#     for route in routes:
+#         full_url = base_url + route
+#         #response = client.get(route)
+#         #print(f"Visiting {route} - Status Code: {response.status_code}")
+#         print(f"Opening {full_url}")
+#         webbrowser.open(full_url)
+#         time.sleep(1)  # Delay to prevent opening all pages at once
+
+# Call this function once your app is running
+
 
 # if __name__ == "__main__":
 #     # Automatically open the browser to the Flask app URL
@@ -235,10 +347,10 @@ def visit_all_routes():
 
 if __name__ == "__main__":
     # Automatically open the browser to the Flask app URL
-    webbrowser.open('http://127.0.0.1:5000/admin_menu')
+    webbrowser.open('http://127.0.0.1:5000/login')
 
+    #visit_all_routes()
     # Start the Flask app in debug mode
     app.run(debug=True, use_reloader=False)  # use_reloader=False to prevent the test client from running twice
     
     # Call the function to visit all routes after the app starts
-    visit_all_routes()

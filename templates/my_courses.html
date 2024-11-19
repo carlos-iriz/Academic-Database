@@ -3,14 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Courses</title>
+    <title>Course Summary</title>
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container mt-5">
-        <h2>My Courses</h2>
-        <p>List of courses you are enrolled in:</p>
-        <!-- Fetch courses from the database and display them in a table -->
+        <h1 class="text-center mb-4">Course Summary</h1>
+        
+        <!-- Table to display course information -->
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Course Name</th>
+                    <th>Course Code</th>
+                    <th>Instructor</th>
+                    <th>Department</th>
+                    <th>Credits</th>
+                    <th>Average Grade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in courses %}
+                    <tr>
+                        <td>{{ course[0] }}</td>  <!-- course_name -->
+                        <td>{{ course[1] }}</td>  <!-- course_code -->
+                        <td>{{ course[2] }}</td>  <!-- instructor_id -->
+                        <td>{{ course[3] }}</td>  <!-- department_name -->
+                        <td>{{ course[4] }}</td>  <!-- credits -->
+                        <td>
+                            {{ (course[5] if course[5] is not none else 0) | round(2) }}
+                        </td>
+                            <!-- average_grade (rounded to 2 decimals) -->
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

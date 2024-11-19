@@ -1,10 +1,12 @@
 # app.py (Flask Backend)
 
-from flask import Flask, request, session, render_template, redirect, url_for
+from flask import Flask, request, session, render_template, redirect, url_for, json
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import webbrowser
 import time
+
+
 
 import secrets
 
@@ -25,43 +27,59 @@ def get_db_connection():
     return conn
 
 
-# check that the info inputted is valid and correct within the user table
 def user_info_check(username, password):
     conn = get_db_connection()
     cursor = conn.cursor()
-    
+
+    # Use %s for both placeholders in the SQL query (username is a string, not an integer)
     cursor.execute("""
     SELECT * 
-    FROM event_scheduling.users 
-    WHERE user_id = %s AND password = %s;
+    FROM UserInfo
+    WHERE username = %s AND password = %s;
     """, (username, password))
-    
+
     result = cursor.fetchone()
-    
+    print(f"Query result: {result}")  # Debugging the query result
+
     cursor.close()
     conn.close()
-    
+
     return result
 
-# Login page logic
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        
+
         # Check user credentials
         user_info = user_info_check(username, password)
-        
+
         if user_info:
-            session['username'] = username
-            session['user_role'] = user_info[1]  # Assuming user role is stored in column index 1
-            session['dept_id'] = user_info[2]  # Assuming department ID is stored in column index 2
-            return redirect(url_for('index')) 
+            session['username'] = user_info[1]  # username is at index 1
+            session['user_role'] = user_info[3]  # role is at index 3
+            session['role_id'] = user_info[4]  # role_id is at index 4
+            # Redirect based on the user's role
+            if session['user_role'] == 'Student':
+                return redirect(url_for('student_menu'))
+            elif session['user_role'] == 'Advisor':
+                return redirect(url_for('advisor_menu'))
+            elif session['user_role'] == 'Instructor':
+                return redirect(url_for('instructor_menu'))
+            elif session['user_role'] == 'Admin':
+                return redirect(url_for('admin_menu'))
+            elif session['user_role'] == 'Staff':
+                return redirect(url_for('staff_menu'))
+            else:
+                error = 'Unknown user role. Please contact the administrator.'       
         else:
             error = 'Invalid Credentials. Please try again.'
+    
     return render_template('login.html', error=error)
+
+
 
 @app.route('/admin_menu')
 def admin_menu():
@@ -73,12 +91,92 @@ def admin_menu():
 def advisor_menu():
     return render_template('advisor_menu.html')
 
-# Course Summary Route
+
 @app.route('/course_summary')
 def course_summary():
-    # You can fetch course details here (e.g., list of courses)
-    # courses = get_courses(session['username'])
-    return render_template('course_summary.html')  # Assuming you have a course summary template
+    # Check if user is logged in
+    if 'user_role' not in session:
+        return redirect(url_for('login'))  # Redirect to login if no role is set in session
+
+    user_role = session['user_role']
+    user_id = session.get('username')  # Assuming `username` or `user_id` is stored in session
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Fetch the department ID for roles that need department-specific access
+    dept_id = None
+    if user_role in ['Instructor', 'Advisor', 'Staff']:
+        if user_role == 'Instructor':
+            cursor.execute("SELECT dept_id FROM Instructors WHERE instructor_id = %s", (user_id,))
+        elif user_role == 'Advisor':
+            cursor.execute("SELECT dept_id FROM Advisors WHERE advisor_id = %s", (user_id,))
+        elif user_role == 'Staff':
+            cursor.execute("SELECT dept_id FROM Staff WHERE staff_id = %s", (user_id,))
+        
+        dept_result = cursor.fetchone()
+        if dept_result:
+            dept_id = dept_result[0]
+
+    # Base query for fetching course details
+    base_query = """
+        SELECT
+            c.course_name,
+            c.course_code,
+            i.instructor_id,
+            d.name AS department_name,
+            c.credits,
+            AVG(
+                CASE
+                    WHEN sc.grade = 'A' THEN 4.0
+                    WHEN sc.grade = 'B' THEN 3.0
+                    WHEN sc.grade = 'C' THEN 2.0
+                    WHEN sc.grade = 'D' THEN 1.0
+                    WHEN sc.grade = 'F' THEN 0.0
+                    ELSE NULL
+                END
+            ) AS average_grade
+        FROM Courses c
+        JOIN Instructors i ON c.dept_id = i.dept_id
+        JOIN Departments d ON c.dept_id = d.dept_id
+        LEFT JOIN StudentCourse sc ON c.course_code = sc.course_code
+    """
+
+    # Adjust query based on user role and apply department filtering if needed
+    if user_role == 'Instructor' and dept_id:
+        # Instructors see courses within their department
+        query = base_query + " WHERE d.dept_id = %s GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
+        cursor.execute(query, (dept_id,))
+    elif user_role == 'Advisor' and dept_id:
+        # Advisors see courses within their department
+        query = base_query + " WHERE d.dept_id = %s GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
+        cursor.execute(query, (dept_id,))
+    elif user_role == 'Staff' and dept_id:
+        # Staff see courses within their department
+        query = base_query + " WHERE d.dept_id = %s GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
+        cursor.execute(query, (dept_id,))
+    elif user_role == 'Student':
+        # Students see all courses
+        query = base_query + " GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
+        cursor.execute(query)
+    elif user_role == 'Admin':
+        # Admins see all courses
+        query = base_query + " GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
+        cursor.execute(query)
+    else:
+        # Unrecognized role
+        cursor.close()
+        conn.close()
+        return redirect(url_for('login'))  # Redirect if role is unrecognized
+
+    # Fetch results and close connections
+    courses = cursor.fetchall()
+    cursor.close()
+    conn.close()
+
+    # Render the course summary template with the fetched data
+    return render_template('course_summary.html', courses=courses)
 
 @app.route('/create_user')
 def create_user():
@@ -86,11 +184,55 @@ def create_user():
     # courses = get_courses(session['username'])
     return render_template('create_user.html')  # Assuming you have a course summary template
 
+# @app.route('/department_summary')
+# def department_summary():
+#     # You can fetch course details here (e.g., list of courses)
+#     # courses = get_courses(session['username'])
+#     return render_template('department_summary.html')  # Assuming you have a course summary template
+
 @app.route('/department_summary')
 def department_summary():
-    # You can fetch course details here (e.g., list of courses)
-    # courses = get_courses(session['username'])
-    return render_template('department_summary.html')  # Assuming you have a course summary template
+    # Ensure the user is logged in
+    if 'user_role' not in session or 'username' not in session:
+        return redirect(url_for('login'))  # Redirect to login if no role or username is set
+
+    user_role = session['user_role']
+    # Admin or another role can access the department summary page
+    if user_role not in ['Admin', 'Instructor']:
+        return redirect(url_for('login'))  # Redirect if user role is not allowed
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    departments = {}
+
+    try:
+        # Fetch instructors grouped by department
+        query = """
+            SELECT i.instructor_id, i.name, i.department, i.email
+            FROM Instructors i
+            ORDER BY i.department, i.name
+        """
+        cursor.execute(query)
+        instructors = cursor.fetchall()
+
+        # Group instructors by department
+        for instructor in instructors:
+            department = instructor['department']
+            if department not in departments:
+                departments[department] = []
+            departments[department].append(instructor)
+
+    except Exception as e:
+        print(f"Error fetching instructors: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+    # Pass the grouped instructors data to the template
+    return render_template('department_summary.html', departments=departments)
+
 
 @app.route('/edit_instructor_info')
 def edit_instructor_info():
@@ -117,17 +259,91 @@ def gpa_calculator():
 def instructor_menu():
     return render_template('instructor_menu.html')
 
-# Instructor Menu Route
+# @app.route('/instructor_summary')
+# def instructor_summary():
+
+#     return render_template('instructor_summary.html')  # Pass the course data to the template
+
 @app.route('/instructor_summary')
 def instructor_summary():
-    return render_template('instructor_summary.html')
+    # Ensure the user is logged in and has admin or appropriate access
+    if 'user_role' not in session or 'username' not in session:
+        return redirect(url_for('login'))  # Redirect to login if no role or username is set
 
-# Log Route (Admin access)
-@app.route('/log')
-def log():
-    # Log file or event viewer logic here
-    # logs = fetch_logs_from_db()
-    return render_template('log.html')  # Assuming you have a log template
+    user_role = session['user_role']
+    # Admin or another role can access the instructor summary page
+    if user_role not in ['Admin', 'Instructor']:  
+        return redirect(url_for('login'))  # Redirect if user role is not allowed
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    instructors = []
+    try:
+        # Fetch all instructors from the Instructors table
+        query = """
+            SELECT instructor_id, name, department, email
+            FROM Instructors
+            ORDER BY name
+        """
+        cursor.execute(query)
+        instructors = cursor.fetchall()
+
+    except Exception as e:
+        print(f"Error fetching instructors: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+    # Pass the instructor data to the template
+    return render_template('instructor_summary.html', instructors=instructors)
+
+
+# # Log Route (Admin access)
+# @app.route('/log')
+# def log():
+#     # Log file or event viewer logic here
+#     # logs = fetch_logs_from_db()
+#     return render_template('log.html')  # Assuming you have a log template
+
+# Log operation (to be called after any INSERT, UPDATE, DELETE operation)
+def log_operation(user_id, operation_type, affected_table, old_data=None, new_data=None):
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Prepare the log entry
+    try:
+        cursor.execute("""
+            INSERT INTO Log (user_id, operationtype, old_data, new_data)
+            VALUES (%s, %s, %s, %s)
+        """, (
+            user_id, 
+            operation_type, 
+            json.dumps(old_data, default=str) if old_data else None,  # Store old data as JSON string
+            json.dumps(new_data, default=str) if new_data else None   # Store new data as JSON string
+        ))
+
+        # Commit the transaction
+        conn.commit()
+
+    except Exception as e:
+        print(f"Error logging operation: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+# Example usage of the log function:
+
+def log_addition(user_id, table, new_data):
+    log_operation(user_id, "INSERT", table, new_data=new_data)
+
+def log_modification(user_id, table, old_data, new_data):
+    log_operation(user_id, "UPDATE", table, old_data=old_data, new_data=new_data)
+
+def log_deletion(user_id, table, old_data):
+    log_operation(user_id, "DELETE", table, old_data=old_data)
 
 # Logout Route
 @app.route('/logout')
@@ -139,23 +355,171 @@ def logout():
 # Log Route (Admin access)
 @app.route('/my_courses')
 def my_courses():
-    # Log file or event viewer logic here
-    # logs = fetch_logs_from_db()
-    return render_template('my_courses.html')  # Assuming you have a log template
+     # Check if the user is an instructor
+    if 'user_role' not in session or session['user_role'] != 'Instructor':
+        return redirect(url_for('login'))  # Redirect to login if not an instructor
+    
+    instructor_id = session['username']  # Assuming the session stores the instructor's username or ID
+    # Connect to the database and fetch course details for the instructor's department
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
-# Log Route (Admin access)
+    cursor.execute("""
+        SELECT
+            c.course_name,
+            c.course_code,
+            i.instructor_id,  -- Instructor ID or name if applicable
+            d.name AS department_name,
+            c.credits,
+            AVG(
+                CASE
+                    WHEN sc.grade = 'A' THEN 4.0
+                    WHEN sc.grade = 'B' THEN 3.0
+                    WHEN sc.grade = 'C' THEN 2.0
+                    WHEN sc.grade = 'D' THEN 1.0
+                    WHEN sc.grade = 'F' THEN 0.0
+                    ELSE NULL
+                END
+            ) AS average_grade
+        FROM Courses c
+        JOIN Instructors i ON c.dept_id = i.dept_id
+        JOIN Departments d ON c.dept_id = d.dept_id
+        LEFT JOIN StudentCourse sc ON c.course_code = sc.course_code
+        WHERE i.instructor_id = instructor_id
+        GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits
+        ORDER BY c.course_name;
+    """, (instructor_id,))
+
+    courses = cursor.fetchall()  # Fetch all the courses for the instructor
+
+    cursor.close()
+    conn.close()
+    return render_template('my_courses.html', courses = courses)  # Assuming you have a log template
+
+# # Log Route (Admin access)
+# @app.route('/my_grades')
+# def my_grades():
+#     # Log file or event viewer logic here
+#     # logs = fetch_logs_from_db()
+#     return render_template('my_grades.html')  # Assuming you have a log template
+
 @app.route('/my_grades')
 def my_grades():
-    # Log file or event viewer logic here
-    # logs = fetch_logs_from_db()
-    return render_template('my_grades.html')  # Assuming you have a log template
+    # Ensure the user is logged in and has the correct role
+    if 'user_role' not in session or 'username' not in session:
+        return redirect(url_for('login'))  # Redirect to login if no role or username is set
 
-# My Information Route
+    user_role = session['user_role']
+    user_id = session['username']  # Assuming `username` is stored in session, which could be the student ID
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Fetch grades for the logged-in student
+    grades = []
+    try:
+        if user_role == 'Student':
+            query = """
+                SELECT c.course_name, c.course_code, sc.grade, c.credits
+                FROM StudentCourse sc
+                JOIN Courses c ON sc.course_code = c.course_code
+                WHERE sc.student_id = %s
+                ORDER BY c.course_name
+            """
+            cursor.execute(query, (user_id,))
+            grades = cursor.fetchall()
+
+    except Exception as e:
+        print(f"Error fetching grades: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+    # Render the grades page with the fetched data
+    return render_template('my_grades.html', grades=grades)
+
+
+# # My Information Route
+# @app.route('/my_info')
+# def my_info():
+#     # Here you might want to fetch user-specific data from a database
+#     # user_info = get_user_info_from_db(session['username'])
+#     return render_template('my_info.html')  # Assuming you have a template for "my_info"
+
 @app.route('/my_info')
 def my_info():
-    # Here you might want to fetch user-specific data from a database
-    # user_info = get_user_info_from_db(session['username'])
-    return render_template('my_info.html')  # Assuming you have a template for "my_info"
+    # Ensure the user is logged in
+    if 'user_role' not in session or 'username' not in session:
+        return redirect(url_for('login'))  # Redirect to login if no role or username is set
+
+    user_role = session['user_role']
+    user_id = session['username']  # Assuming `username` or `user_id` is stored in session
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Define variables for user info, advisors, and course schedule
+    user_info = None
+    advisors = []
+    course_schedule = []
+
+    try:
+        # Fetch the base user information based on role
+        if user_role == 'Student':
+            # Retrieve student info
+            cursor.execute("SELECT * FROM Students WHERE student_id = %s", (user_id,))
+            user_info = cursor.fetchone()
+
+            if user_info:
+                department_id = user_info['dept_id']  # Assuming 'dept_id' is a column in Students table
+
+                # Fetch advisors in the student's department
+                cursor.execute("""
+                    SELECT * 
+                    FROM Advisors 
+                    WHERE dept_id = %s
+                """, (department_id,))
+                advisors = cursor.fetchall()
+
+                # Fetch the student's course schedule
+                cursor.execute("""
+                    SELECT c.course_name, c.course_code, c.credits, sc.grade
+                    FROM Courses c
+                    JOIN StudentCourse sc ON c.course_code = sc.course_code
+                    WHERE sc.student_id = %s
+                """, (user_id,))
+                course_schedule = cursor.fetchall()
+
+        elif user_role == 'Instructor':
+            cursor.execute("SELECT * FROM Instructors WHERE instructor_id = %s", (user_id,))
+            user_info = cursor.fetchone()
+        elif user_role == 'Advisor':
+            cursor.execute("SELECT * FROM Advisors WHERE advisor_id = %s", (user_id,))
+            user_info = cursor.fetchone()
+        elif user_role == 'Staff':
+            cursor.execute("SELECT * FROM Staff WHERE staff_id = %s", (user_id,))
+            user_info = cursor.fetchone()
+        elif user_role == 'Admin':
+            cursor.execute("SELECT * FROM Admins WHERE admin_id = %s", (user_id,))
+            user_info = cursor.fetchone()
+            
+            # need ti change admin table to user table to get info bc admin is staff but staff isnt admin
+
+    except Exception as e:
+        print(f"Error fetching user info: {e}")  # Log error
+    finally:
+        cursor.close()
+        conn.close()
+
+    # If user info is found, pass it to the template along with advisors and course schedule
+    if user_info:
+        return render_template('my_info.html', user_info=user_info, advisors=advisors, course_schedule=course_schedule)
+    else:
+        return redirect(url_for('login'))
+
+
 
 # Log Route (Admin access)
 @app.route('/staff_menu')
@@ -164,12 +528,69 @@ def staff_menu():
     # logs = fetch_logs_from_db()
     return render_template('staff_menu.html')  # Assuming you have a log template
 
-# Log Route (Admin access)
-@app.route('/student_info')
+# # Log Route (Admin access)
+# @app.route('/student_info')
+# def student_info():
+#     # Log file or event viewer logic here
+#     # logs = fetch_logs_from_db()
+#     return render_template('student_info.html')  # Assuming you have a log template
+
+from flask import request, render_template, redirect, url_for, session
+
+@app.route('/student_info', methods=['GET', 'POST'])
 def student_info():
-    # Log file or event viewer logic here
-    # logs = fetch_logs_from_db()
-    return render_template('student_info.html')  # Assuming you have a log template
+    # Ensure the user is an admin
+    if 'user_role' not in session or session['user_role'] != 'Admin':
+        return redirect(url_for('login'))  # Redirect to login if not an admin
+    
+    student_info = None
+    stud_id = None  # Store student ID for the search query
+
+    # Handle POST request for searching
+    if request.method == 'POST':
+        stud_id = request.form.get('stud_id')
+        
+        if stud_id:
+            # Connect to the database
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+            # Query to get student information based on stud_id
+            try:
+                # Fetch student details from Students table
+                cursor.execute("""
+                    SELECT s.student_id, u.name, u.email, s.major, s.year
+                    FROM Students s
+                    JOIN Users u ON s.student_id = u.user_id
+                    WHERE s.student_id = %s
+                """, (stud_id,))
+                
+                student_info = cursor.fetchone()  # Fetch student information
+
+                # Fetch student's course schedule
+                cursor.execute("""
+                    SELECT c.course_name, c.course_code, sc.grade, c.credits
+                    FROM StudentCourse sc
+                    JOIN Courses c ON sc.course_code = c.course_code
+                    WHERE sc.student_id = %s
+                """, (stud_id,))
+                
+                student_courses = cursor.fetchall()  # Fetch courses related to student
+
+            except Exception as e:
+                print(f"Error fetching student info: {e}")
+                student_info = None  # Ensure no data is shown if there's an error
+
+            finally:
+                cursor.close()
+                conn.close()
+                
+            # Pass course schedule as part of the student info if data exists
+            if student_info:
+                student_info['courses'] = student_courses
+
+    return render_template('student_info.html', student_info=student_info, stud_id=stud_id)
+
 
 # Student Menu Route
 @app.route('/student_menu')
@@ -177,11 +598,79 @@ def student_menu():
     return render_template('student_menu.html')
 
 # Student Summary Route
+# @app.route('/student_summary')
+# def student_summary():
+#     # Here you can fetch the student summary (grades, courses, etc.) from a database
+#     # student_info = get_student_summary(session['username'])
+#     return render_template('student_summary.html')  # Assuming you have a student summary template
+
 @app.route('/student_summary')
 def student_summary():
-    # Here you can fetch the student summary (grades, courses, etc.) from a database
-    # student_info = get_student_summary(session['username'])
-    return render_template('student_summary.html')  # Assuming you have a student summary template
+    # Ensure the user is logged in
+    if 'user_role' not in session or 'username' not in session:
+        return redirect(url_for('login'))  # Redirect to login if no role or username is set
+
+    user_role = session['user_role']
+    user_id = session['username']  # Assuming `username` is stored in session
+
+    # Connect to the database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Prepare data for student summary
+    student_summary_data = []
+
+    try:
+        if user_role == 'Instructor':
+            # Fetch students in the instructor's courses
+            query = """
+                SELECT DISTINCT s.student_id, u.name, u.email, s.major, s.year, c.course_name
+                FROM Students s
+                JOIN StudentCourse sc ON s.student_id = sc.student_id
+                JOIN Courses c ON sc.course_code = c.course_code
+                JOIN Instructors i ON i.dept_id = c.dept_id
+                JOIN Users u ON s.student_id = u.user_id
+                WHERE i.instructor_id = %s
+                ORDER BY s.student_id
+            """
+            cursor.execute(query, (user_id,))
+            student_summary_data = cursor.fetchall()
+
+        elif user_role == 'Advisor':
+            # Fetch all students in the advisor's department
+            query = """
+                SELECT s.student_id, u.name, u.email, s.major, s.year
+                FROM Students s
+                JOIN Users u ON s.student_id = u.user_id
+                JOIN Advisors a ON s.dept_id = a.dept_id
+                WHERE a.advisor_id = %s
+                ORDER BY s.student_id
+            """
+            cursor.execute(query, (user_id,))
+            student_summary_data = cursor.fetchall()
+
+        elif user_role == 'Staff':
+            # Fetch all student information
+            query = """
+                SELECT s.student_id, u.name, u.email, s.major, s.year
+                FROM Students s
+                JOIN Users u ON s.student_id = u.user_id
+                ORDER BY s.student_id
+            """
+            cursor.execute(query)
+            student_summary_data = cursor.fetchall()
+
+    except Exception as e:
+        print(f"Error fetching student summary: {e}")
+        student_summary_data = []
+
+    finally:
+        cursor.close()
+        conn.close()
+
+    # Render the template with student summary data
+    return render_template('student_summary.html', student_summary=student_summary_data)
+
 
 # Student Summary Route
 @app.route('/student_summary_advisor')
@@ -255,40 +744,40 @@ def user_info():
 
 
 # Function to open all routes in the default web browser when the app starts
-def visit_all_routes():
-    base_url = "http://127.0.0.1:5000"  # Adjust this if your app runs on a different host/port
-    routes = [
-        '/login',
-        '/admin_menu',
-        '/advisor_menu',
-        '/course_summary',
-        '/create_user',
-        '/department_summary',
-        '/edit_instructor_info',
-        '/edit_user',
-        '/gpa_calculator',
-        '/instructor_menu',
-        '/instructor_summary',
-        '/log',
-        '/logout',
-        '/my_courses',
-        '/my_grades',
-        '/my_info',
-        '/staff_menu',
-        '/student_info',
-        '/student_menu',
-        '/student_summary',
-        '/student_summary_advisor',
-        '/user_info'
-    ]
+# def visit_all_routes():
+#     base_url = "http://127.0.0.1:5000"  # Adjust this if your app runs on a different host/port
+#     routes = [
+#         '/login',
+#         '/admin_menu',
+#         '/advisor_menu',
+#         '/course_summary',
+#         '/create_user',
+#         '/department_summary',
+#         '/edit_instructor_info',
+#         '/edit_user',
+#         '/gpa_calculator',
+#         '/instructor_menu',
+#         '/instructor_summary',
+#         '/log',
+#         '/logout',
+#         '/my_courses',
+#         '/my_grades',
+#         '/my_info',
+#         '/staff_menu',
+#         '/student_info',
+#         '/student_menu',
+#         '/student_summary',
+#         '/student_summary_advisor',
+#         '/user_info'
+#     ]
 
-    for route in routes:
-        full_url = base_url + route
-        #response = client.get(route)
-        #print(f"Visiting {route} - Status Code: {response.status_code}")
-        print(f"Opening {full_url}")
-        webbrowser.open(full_url)
-        time.sleep(1)  # Delay to prevent opening all pages at once
+#     for route in routes:
+#         full_url = base_url + route
+#         #response = client.get(route)
+#         #print(f"Visiting {route} - Status Code: {response.status_code}")
+#         print(f"Opening {full_url}")
+#         webbrowser.open(full_url)
+#         time.sleep(1)  # Delay to prevent opening all pages at once
 
 # Call this function once your app is running
 
@@ -304,7 +793,7 @@ if __name__ == "__main__":
     # Automatically open the browser to the Flask app URL
     webbrowser.open('http://127.0.0.1:5000/login')
 
-    visit_all_routes()
+    #visit_all_routes()
     # Start the Flask app in debug mode
     app.run(debug=True, use_reloader=False)  # use_reloader=False to prevent the test client from running twice
     
