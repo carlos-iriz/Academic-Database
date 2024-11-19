@@ -10,6 +10,8 @@ port_id = 5432
 conn = None
 cursor = None
 
+#CURRENT PROGRAM!!!!
+
 ########################################################################################################################
 ########################################################################################################################
 # Classes to hold database information from user classes (Student, Instructor, Staff, Advisor)
@@ -482,7 +484,6 @@ def main():
         # Initialize StaffDatabaseOperations with connection
         operations = DatabaseOperations(conn)
 
-
     except psycopg2.Error as error:
         print(f"Error: {error}")
 
@@ -684,6 +685,7 @@ def advisor_add_drop_student():
 
 ##########################################################################################################################
 ##########################################################################################################################
+<<<<<<< HEAD
 # # Requirement 3:
 # # Student and instructor users of the system are authorized to view information or read data that is related to him/her only
 # # def student_instructor_view():
@@ -691,6 +693,15 @@ def advisor_add_drop_student():
 # #     def view_student_info(database_operations_instance, stud_id):
 # #         condition = {'stud_id': stud_id}
 # #         database_operations_instance.view_entry('Students', condition)
+=======
+#Requirement 3:
+#Student and instructor users of the system are authorized to view information or read data that is related to him/her only
+def student_instructor_view():
+    # Query to view student info from students table
+    def view_student_info(database_operations_instance, stud_id):
+        condition = {'stud_id': stud_id}
+        database_operations_instance.view_entry('Students', condition)
+>>>>>>> origin/Carlos-Branch
 
 
 # #     # Query to view Enrolled courses (StudentCourse table)
@@ -702,6 +713,7 @@ def advisor_add_drop_student():
 #         condition = {'stud_id': stud_id}
 #         database_operations_instance.view_entry('StudentCourse', condition)
 
+<<<<<<< HEAD
 # #     # Query to view instuctor info from instructors table
 # #     def view_instructor_info(database_operations_instance, instructor_id):
 # #         condition = {'instructor_id': instructor_id}
@@ -716,6 +728,19 @@ def advisor_add_drop_student():
 #     def view_instructor_courses(database_operations_instance, instructor_id):
 #         condition = {'instructor_id': instructor_id}
 #         database_operations_instance.view_entry('InstructorCourse', condition)
+=======
+
+    # Query to view Enrolled courses (InstructorCourse table)
+    def view_instructor_courses(database_operations_instance, instructor_id):
+        condition = {'instructor_id': instructor_id}
+        database_operations_instance.view_entry('InstructorCourse', condition)
+
+
+    # Query to view Enrolled courses (InstructorCourse table)
+    def view_instructor_courses(database_operations_instance, instructor_id):
+        condition = {'instructor_id': instructor_id}
+        database_operations_instance.view_entry('InstructorCourse', condition)
+>>>>>>> origin/Carlos-Branch
 
 ##########################################################################################################################
 ##########################################################################################################################
