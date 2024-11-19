@@ -695,15 +695,15 @@ def student_instructor_view():
         condition = {'stud_id': stud_id}
         database_operations_instance.view_entry('Students', condition)
 
+
     # Query to view Enrolled courses (StudentCourse table)
     def view_student_enrolled_courses(database_operations_instance, stud_id):
         condition = {'stud_id': stud_id}
         database_operations_instance.view_entry('StudentCourse', condition)
-
-    # Query to view instuctor info from instructors table
-    def view_instructor_info(database_operations_instance, instructor_id):
-        condition = {'instructor_id': instructor_id}
-        database_operations_instance.view_entry('Instructors', condition)
+    # Query to view Enrolled courses (StudentCourse table)
+    def view_student_enrolled_courses(database_operations_instance, stud_id):
+        condition = {'stud_id': stud_id}
+        database_operations_instance.view_entry('StudentCourse', condition)
 
 
     # Query to view Enrolled courses (InstructorCourse table)
