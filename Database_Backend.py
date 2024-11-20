@@ -1,10 +1,10 @@
 import psycopg2
 
 # Database credentials
-hostname = ''
+hostname = 'academic-database-main.chs4cey0uprk.us-east-2.rds.amazonaws.com'
 database = 'Academic_Database'
 username = 'postgres'
-pwd = ''
+pwd = 'pops1234'
 port_id = 5432
 
 conn = None

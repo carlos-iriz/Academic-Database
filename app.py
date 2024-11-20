@@ -6,6 +6,20 @@ from psycopg2.extras import RealDictCursor
 import webbrowser
 import time
 
+from Database_Backend import (
+    User,
+    Students,
+    Instructors,
+    Staff,
+    Advisors,
+    Courses,
+    Departments,
+    Log,
+    StudentCourse,
+    InstructorCourse,
+    DatabaseOperations
+)
+
 
 
 import secrets
@@ -19,10 +33,10 @@ app.secret_key = secrets.token_hex(16)
 # Database connection setup
 def get_db_connection():
     conn = psycopg2.connect(
-        host="",
+        host="academic-database-main.chs4cey0uprk.us-east-2.rds.amazonaws.com",
         database="Academic_Database",
         user="postgres",
-        password=""
+        password="pops1234"
     )
     return conn
 
@@ -46,7 +60,6 @@ def user_info_check(username, password):
 
     return result
 
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     error = None
@@ -58,7 +71,8 @@ def login():
         user_info = user_info_check(username, password)
 
         if user_info:
-            session['username'] = user_info[1]  # username is at index 1
+            session['username'] = user_info[0]  # username is at index 1
+            #session['username'] = user_info[1]  # username is at index 1
             session['user_role'] = user_info[3]  # role is at index 3
             session['role_id'] = user_info[4]  # role_id is at index 4
             # Redirect based on the user's role
@@ -98,28 +112,11 @@ def course_summary():
     if 'user_role' not in session:
         return redirect(url_for('login'))  # Redirect to login if no role is set in session
 
-    user_role = session['user_role']
-    user_id = session.get('username')  # Assuming `username` or `user_id` is stored in session
-
     # Connect to the database
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Fetch the department ID for roles that need department-specific access
-    dept_id = None
-    if user_role in ['Instructor', 'Advisor', 'Staff']:
-        if user_role == 'Instructor':
-            cursor.execute("SELECT dept_id FROM Instructors WHERE instructor_id = %s", (user_id,))
-        elif user_role == 'Advisor':
-            cursor.execute("SELECT dept_id FROM Advisors WHERE advisor_id = %s", (user_id,))
-        elif user_role == 'Staff':
-            cursor.execute("SELECT dept_id FROM Staff WHERE staff_id = %s", (user_id,))
-        
-        dept_result = cursor.fetchone()
-        if dept_result:
-            dept_id = dept_result[0]
-
-    # Base query for fetching course details
+    # Base query for fetching all course details
     base_query = """
         SELECT
             c.course_name,
@@ -141,42 +138,24 @@ def course_summary():
         JOIN Instructors i ON c.dept_id = i.dept_id
         JOIN Departments d ON c.dept_id = d.dept_id
         LEFT JOIN StudentCourse sc ON c.course_code = sc.course_code
+        GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits
+        ORDER BY c.course_name;
     """
 
-    # Adjust query based on user role and apply department filtering if needed
-    if user_role == 'Instructor' and dept_id:
-        # Instructors see courses within their department
-        query = base_query + " WHERE d.dept_id = %s GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
-        cursor.execute(query, (dept_id,))
-    elif user_role == 'Advisor' and dept_id:
-        # Advisors see courses within their department
-        query = base_query + " WHERE d.dept_id = %s GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
-        cursor.execute(query, (dept_id,))
-    elif user_role == 'Staff' and dept_id:
-        # Staff see courses within their department
-        query = base_query + " WHERE d.dept_id = %s GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
-        cursor.execute(query, (dept_id,))
-    elif user_role == 'Student':
-        # Students see all courses
-        query = base_query + " GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
-        cursor.execute(query)
-    elif user_role == 'Admin':
-        # Admins see all courses
-        query = base_query + " GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits ORDER BY c.course_name;"
-        cursor.execute(query)
-    else:
-        # Unrecognized role
-        cursor.close()
-        conn.close()
-        return redirect(url_for('login'))  # Redirect if role is unrecognized
+    # Execute the query to fetch all courses
+    cursor.execute(base_query)
 
-    # Fetch results and close connections
+    # Fetch all results
     courses = cursor.fetchall()
+
+    # Close the database connection
     cursor.close()
     conn.close()
 
     # Render the course summary template with the fetched data
     return render_template('course_summary.html', courses=courses)
+
+
 
 @app.route('/create_user')
 def create_user():
@@ -250,8 +229,8 @@ def edit_user():
 # GPA Calculator Route
 @app.route('/gpa_calculator')
 def gpa_calculator():
-    # You may implement GPA calculation logic here
-    # gpa = calculate_gpa(student_courses)
+    
+    
     return render_template('gpa_calculator.html')  # Assuming you have a GPA calculator template
 
 # Instructor Menu Route
@@ -352,49 +331,124 @@ def logout():
     session.clear()  # Clear all session data
     return redirect(url_for('login'))  # Redirect back to the login page
 
-# Log Route (Admin access)
+
 @app.route('/my_courses')
 def my_courses():
-     # Check if the user is an instructor
-    if 'user_role' not in session or session['user_role'] != 'Instructor':
-        return redirect(url_for('login'))  # Redirect to login if not an instructor
-    
-    instructor_id = session['username']  # Assuming the session stores the instructor's username or ID
-    # Connect to the database and fetch course details for the instructor's department
+    # Ensure the user is logged in
+    if 'user_role' not in session or 'username' not in session:
+        return redirect(url_for('login'))  # Redirect to login if not logged in
+
+    user_role = session['user_role']
+    user_id = session['username']  # `username` stores the instructor's ID or student's ID
+
+    # Connect to the database
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    cursor.execute("""
-        SELECT
-            c.course_name,
-            c.course_code,
-            i.instructor_id,  -- Instructor ID or name if applicable
-            d.name AS department_name,
-            c.credits,
-            AVG(
-                CASE
-                    WHEN sc.grade = 'A' THEN 4.0
-                    WHEN sc.grade = 'B' THEN 3.0
-                    WHEN sc.grade = 'C' THEN 2.0
-                    WHEN sc.grade = 'D' THEN 1.0
-                    WHEN sc.grade = 'F' THEN 0.0
-                    ELSE NULL
-                END
-            ) AS average_grade
-        FROM Courses c
-        JOIN Instructors i ON c.dept_id = i.dept_id
-        JOIN Departments d ON c.dept_id = d.dept_id
-        LEFT JOIN StudentCourse sc ON c.course_code = sc.course_code
-        WHERE i.instructor_id = instructor_id
-        GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits
-        ORDER BY c.course_name;
-    """, (instructor_id,))
+    courses = []
+    courses1 = []  # Initialize courses1 for students' courses
 
-    courses = cursor.fetchall()  # Fetch all the courses for the instructor
+    try:
+        if user_role == 'Instructor':
+            # Fetch courses taught by the instructor
+            cursor.execute("""
+                SELECT
+                    c.course_name,
+                    c.course_code,
+                    i.instructor_id,
+                    d.name AS department_name,
+                    c.credits,
+                    AVG(
+                        CASE
+                            WHEN sc.grade = 'A' THEN 4.0
+                            WHEN sc.grade = 'B' THEN 3.0
+                            WHEN sc.grade = 'C' THEN 2.0
+                            WHEN sc.grade = 'D' THEN 1.0
+                            WHEN sc.grade = 'F' THEN 0.0
+                            ELSE NULL
+                        END
+                    ) AS average_grade
+                FROM Courses c
+                JOIN Instructors i ON c.dept_id = i.dept_id
+                JOIN Departments d ON c.dept_id = d.dept_id
+                LEFT JOIN StudentCourse sc ON c.course_code = sc.course_code
+                WHERE i.instructor_id = %s
+                GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits
+                ORDER BY c.course_name;
+            """, (user_id,))
+            courses = cursor.fetchall()
 
-    cursor.close()
-    conn.close()
-    return render_template('my_courses.html', courses = courses)  # Assuming you have a log template
+        elif user_role == 'Student':
+            # Fetch courses the student is enrolled in
+            cursor.execute("""
+                SELECT
+                    c.course_name,
+                    c.course_code,
+                    c.credits,
+                    sc.grade,
+                    sc.semester,
+                    sc.year_taken
+                FROM StudentCourse sc
+                JOIN Courses c ON sc.course_code = c.course_code
+                WHERE sc.stud_id = %s
+                ORDER BY c.course_name;
+            """, (user_id,))
+            courses1 = cursor.fetchall()
+
+    except Exception as e:
+        print(f"Error fetching courses: {e}")
+        return "An error occurred while fetching courses.", 500
+    finally:
+        cursor.close()
+        conn.close()
+
+    # Render the appropriate template with the fetched courses
+    return render_template('my_courses.html', courses=courses, courses1=courses1, user_role=user_role)
+
+
+# @app.route('/my_courses')
+# def my_courses():
+#     # Check if the user is logged in and if they are an instructor
+#     if 'user_role' not in session or session['user_role'] != 'Instructor':
+#         return redirect(url_for('login'))  # Redirect to login if not an instructor
+    
+#     instructor_id = session['username']  # Assuming the session stores the instructor's username or ID
+#     # Connect to the database and fetch course details for the instructor
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
+
+#     cursor.execute("""
+#         SELECT
+#             c.course_name,
+#             c.course_code,
+#             i.instructor_id,  -- Instructor ID or name if applicable
+#             d.name AS department_name,
+#             c.credits,
+#             AVG(
+#                 CASE
+#                     WHEN sc.grade = 'A' THEN 4.0
+#                     WHEN sc.grade = 'B' THEN 3.0
+#                     WHEN sc.grade = 'C' THEN 2.0
+#                     WHEN sc.grade = 'D' THEN 1.0
+#                     WHEN sc.grade = 'F' THEN 0.0
+#                     ELSE NULL
+#                 END
+#             ) AS average_grade
+#         FROM Courses c
+#         JOIN Instructors i ON c.dept_id = i.dept_id
+#         JOIN Departments d ON c.dept_id = d.dept_id
+#         LEFT JOIN StudentCourse sc ON c.course_code = sc.course_code
+#         WHERE i.instructor_id = %s
+#         GROUP BY c.course_code, c.course_name, i.instructor_id, d.name, c.credits
+#         ORDER BY c.course_name;
+#     """, (instructor_id,))
+
+#     courses = cursor.fetchall()  # Fetch all the courses for the instructor
+
+#     cursor.close()
+#     conn.close()
+#     return render_template('my_courses.html', courses=courses)  # Assuming you have a template for my_courses
+
 
 # # Log Route (Admin access)
 # @app.route('/my_grades')
@@ -451,73 +505,32 @@ def my_grades():
 def my_info():
     # Ensure the user is logged in
     if 'user_role' not in session or 'username' not in session:
-        return redirect(url_for('login'))  # Redirect to login if no role or username is set
+        return redirect(url_for('login'))  # Redirect to login if not logged in
 
-    user_role = session['user_role']
-    user_id = session['username']  # Assuming `username` or `user_id` is stored in session
-
-    # Connect to the database
+    user_id = session['username']  # Assume `username` maps to `user_id` in UserInfo
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Define variables for user info, advisors, and course schedule
     user_info = None
-    advisors = []
-    course_schedule = []
 
     try:
-        # Fetch the base user information based on role
-        if user_role == 'Student':
-            # Retrieve student info
-            cursor.execute("SELECT * FROM Students WHERE student_id = %s", (user_id,))
-            user_info = cursor.fetchone()
+        # Fetch user-specific data from UserInfo table
+        cursor.execute("SELECT * FROM UserInfo WHERE user_id = %s", (user_id,))
+        user_info = cursor.fetchone()
 
-            if user_info:
-                department_id = user_info['dept_id']  # Assuming 'dept_id' is a column in Students table
-
-                # Fetch advisors in the student's department
-                cursor.execute("""
-                    SELECT * 
-                    FROM Advisors 
-                    WHERE dept_id = %s
-                """, (department_id,))
-                advisors = cursor.fetchall()
-
-                # Fetch the student's course schedule
-                cursor.execute("""
-                    SELECT c.course_name, c.course_code, c.credits, sc.grade
-                    FROM Courses c
-                    JOIN StudentCourse sc ON c.course_code = sc.course_code
-                    WHERE sc.student_id = %s
-                """, (user_id,))
-                course_schedule = cursor.fetchall()
-
-        elif user_role == 'Instructor':
-            cursor.execute("SELECT * FROM Instructors WHERE instructor_id = %s", (user_id,))
-            user_info = cursor.fetchone()
-        elif user_role == 'Advisor':
-            cursor.execute("SELECT * FROM Advisors WHERE advisor_id = %s", (user_id,))
-            user_info = cursor.fetchone()
-        elif user_role == 'Staff':
-            cursor.execute("SELECT * FROM Staff WHERE staff_id = %s", (user_id,))
-            user_info = cursor.fetchone()
-        elif user_role == 'Admin':
-            cursor.execute("SELECT * FROM Admins WHERE admin_id = %s", (user_id,))
-            user_info = cursor.fetchone()
-            
-            # need ti change admin table to user table to get info bc admin is staff but staff isnt admin
+        if not user_info:
+            return redirect(url_for('login'))  # If no user info found, redirect to login
 
     except Exception as e:
-        print(f"Error fetching user info: {e}")  # Log error
+        print(f"Error: {e}")
+        return "An error occurred.", 500
     finally:
         cursor.close()
         conn.close()
 
-    # If user info is found, pass it to the template along with advisors and course schedule
-    if user_info:
-        return render_template('my_info.html', user_info=user_info, advisors=advisors, course_schedule=course_schedule)
-    else:
-        return redirect(url_for('login'))
+    # Render the user information page
+    return render_template('my_info.html', user_info=user_info if user_info else {})
+
 
 
 
