@@ -25,7 +25,7 @@ class User:
         cursor = conn.cursor()
         cursor.execute(
             """
-            SELECT user_id, username, email, role, role_id 
+            SELECT user_id, username, email, role, password 
             FROM UserInfo 
             WHERE user_id = %s
             """,
@@ -34,7 +34,7 @@ class User:
         result = cursor.fetchone()
 
         if result:
-            self.user_id, self.username, self.email, self.role, self.role_id = result
+            self.user_id, self.username, self.email, self.role, self.password = result
         else:
             raise ValueError(f"No record found in UserInfo for user_id {user_id}")
 
@@ -47,7 +47,7 @@ class User:
 class Students:
     def __init__(self, conn, stud_id):
         cursor = conn.cursor()
-        cursor.execute("SELECT stud_id, gender, major FROM Students WHERE stud_id = %s", (stud_id,))
+        cursor.execute("SELECT stud_id, gender, major, dept_id FROM Students WHERE stud_id = %s", (stud_id,))
         result = cursor.fetchone()
 
         if result:
@@ -79,8 +79,7 @@ class Instructors:
     def __init__(self, conn, instructor_id):
         cursor = conn.cursor()
         cursor.execute(
-            "SELECT instructor_id, dept_id, hired_sem, instructor_phone FROM Instructors WHERE instructor_id = %s",
-            (instructor_id,)
+            "SELECT instructor_id, dept_id, hired_sem, instructor_phone FROM Instructors WHERE instructor_id = %s", (instructor_id,)
         )
         result = cursor.fetchone()
 
