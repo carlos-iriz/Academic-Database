@@ -11,7 +11,7 @@ conn = None
 cursor = None
 
 #CURRENT PROGRAM!!!!
-# This is carlos's branch 2
+# This is carlos's branch updated
 
 ########################################################################################################################
 ########################################################################################################################
@@ -368,81 +368,79 @@ def main():
         #/////////////////////////////////////////////////////////////////////////////////////////////////////////////
         # Creates tables in database only if the tables are not already in database
 
-        create_departments_table = '''
-            CREATE TABLE IF NOT EXISTS Departments(
-                dept_id VARCHAR(9) PRIMARY KEY, 
+        create_tables = '''
+        
+        
+            CREATE TABLE IF NOT EXISTS Departments (
+                dept_id VARCHAR(9) PRIMARY KEY,
                 name VARCHAR(50)
-        );'''
+            );
 
-        create_students_table = '''
+            CREATE TABLE IF NOT EXISTS UserInfo (
+                user_id INTEGER PRIMARY KEY,
+                username VARCHAR(50) UNIQUE NOT NULL,
+                email VARCHAR(100) UNIQUE NOT NULL,
+                role VARCHAR(30) NOT NULL,
+                password VARCHAR(20) NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS Students (
-                stud_id SERIAL PRIMARY KEY, 
+                stud_id INTEGER PRIMARY KEY,
                 gender VARCHAR(10),
                 major VARCHAR(100),
                 dept_id VARCHAR(9),
-                FOREIGN KEY (dept_id) REFERENCES Departments(dept_id)
-        );'''
+                FOREIGN KEY (dept_id) REFERENCES Departments(dept_id),
+                FOREIGN KEY (stud_id) REFERENCES UserInfo(user_id)
+            );
 
-        create_courses_table = '''
             CREATE TABLE IF NOT EXISTS Courses (
                 course_code CHAR(7) PRIMARY KEY,
                 course_name VARCHAR(30),
                 dept_id VARCHAR(9),
                 credits INTEGER,
                 FOREIGN KEY (dept_id) REFERENCES Departments(dept_id)
-        );'''
+            );
 
-        create_instructors_table = '''
             CREATE TABLE IF NOT EXISTS Instructors (
-                instructor_id CHAR(9) PRIMARY KEY,
+                instructor_id INTEGER PRIMARY KEY,
                 dept_id VARCHAR(9),
                 hired_sem VARCHAR(50),
                 instructor_phone VARCHAR(20),
-                FOREIGN KEY (dept_id) REFERENCES Departments(dept_id)
-        );'''       
+                FOREIGN KEY (dept_id) REFERENCES Departments(dept_id),
+                FOREIGN KEY (instructor_id) REFERENCES UserInfo(user_id)
+            );
 
-        create_staff_table = '''
             CREATE TABLE IF NOT EXISTS Staff (
-                staff_id SERIAL PRIMARY KEY,
+                staff_id INTEGER PRIMARY KEY,
                 dept_id VARCHAR(9),
                 phone VARCHAR(20),
-                FOREIGN KEY (dept_id) REFERENCES Departments(dept_id)
-        );'''
+                FOREIGN KEY (dept_id) REFERENCES Departments(dept_id),
+                FOREIGN KEY (staff_id) REFERENCES UserInfo(user_id)
+            );
 
-        create_advisors_table = '''
             CREATE TABLE IF NOT EXISTS Advisors (
-                adv_id SERIAL PRIMARY KEY,
+                adv_id INTEGER PRIMARY KEY,
                 total_hours_reg INT,
                 major_offered VARCHAR(100),
                 dept_id VARCHAR(9),
                 advisor_phone VARCHAR(20),
                 building VARCHAR(50),
                 office VARCHAR(50),
-                FOREIGN KEY (dept_id) REFERENCES Departments(dept_id)
-        );'''
+                FOREIGN KEY (dept_id) REFERENCES Departments(dept_id),
+                FOREIGN KEY (adv_id) REFERENCES UserInfo(user_id)
+            );
 
-        create_userInfo_table = '''
-            CREATE TABLE IF NOT EXISTS UserInfo (
-                user_id SERIAL PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                email VARCHAR(100) UNIQUE NOT NULL,
-                role VARCHAR(30) NOT NULL,
-                role_id SERIAL NOT NULL
-            );'''
-
-        create_log_table = '''
             CREATE TABLE IF NOT EXISTS Log (
-                entry SERIAL PRIMARY KEY,
+                entry INTEGER PRIMARY KEY,
                 timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-                User_id SERIAL NOT NULL REFERENCES UserInfo(user_id) ON DELETE CASCADE,
+                user_id INTEGER NOT NULL REFERENCES UserInfo(user_id) ON DELETE CASCADE,
                 operationtype VARCHAR(50) NOT NULL,
                 old_data TEXT,
                 new_data TEXT
-            );'''
+            );
 
-        create_student_course_table = '''
             CREATE TABLE IF NOT EXISTS StudentCourse (
-                stud_id SERIAL,
+                stud_id INTEGER,
                 course_code CHAR(7),
                 semester CHAR(1),
                 year_taken CHAR(4),
@@ -451,11 +449,10 @@ def main():
                 PRIMARY KEY (stud_id, course_code, semester, year_taken),
                 FOREIGN KEY (stud_id) REFERENCES Students(stud_id),
                 FOREIGN KEY (course_code) REFERENCES Courses(course_code)
-            );'''
+            );
 
-        create_instructor_course_table = '''
             CREATE TABLE IF NOT EXISTS InstructorCourse (
-                instructor_id CHAR(9),
+                instructor_id INTEGER,
                 course_code CHAR(7),
                 semester CHAR(1),
                 year_taught CHAR(4),
@@ -463,20 +460,12 @@ def main():
                 PRIMARY KEY (instructor_id, course_code, semester, year_taught),
                 FOREIGN KEY (instructor_id) REFERENCES Instructors(instructor_id),
                 FOREIGN KEY (course_code) REFERENCES Courses(course_code)
-            );'''
+            );
+        '''
 
         # Executes creation statements in database
         cursor = conn.cursor()
-        cursor.execute(create_departments_table)
-        cursor.execute(create_students_table)
-        cursor.execute(create_instructors_table)
-        cursor.execute(create_courses_table)
-        cursor.execute(create_staff_table)
-        cursor.execute(create_advisors_table)
-        cursor.execute(create_userInfo_table)
-        cursor.execute(create_log_table)
-        cursor.execute(create_student_course_table)
-        cursor.execute(create_instructor_course_table)
+        cursor.execute(create_tables)
         conn.commit()
         #/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
