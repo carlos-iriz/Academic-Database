@@ -371,7 +371,7 @@ def main():
         create_tables = '''
         
         
-                    CREATE TABLE IF NOT EXISTS Departments (
+            CREATE TABLE IF NOT EXISTS Departments (
                 dept_id VARCHAR(9) PRIMARY KEY,
                 name VARCHAR(50)
             );
