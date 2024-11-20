@@ -69,6 +69,51 @@ class Students:
         results = cursor.fetchall()
         self.courses = [course_code for (course_code,) in results]
 
+    def calculate_gpa(self, conn):
+
+        grade_mapping = {
+            'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+            'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
+        }
+
+        try:
+            cursor = conn.cursor()
+            # Query to fetch grades for the student
+            cursor.execute(
+                """
+                SELECT grade 
+                FROM studentcourse 
+                WHERE stud_id = %s
+                """,
+                (self.stud_id,)
+            )
+
+            grades = cursor.fetchall()
+
+            if not grades:
+                print(f"No grades found for student ID: {self.stud_id}")
+                return None
+
+            # Convert grades to numeric values using grade_mapping
+            numeric_grades = [grade_mapping[grade[0]] for grade in grades if grade[0] in grade_mapping]
+            
+            if not numeric_grades:
+                print(f"No valid grades found for student ID: {self.stud_id}")
+                return None
+
+            # Calculate GPA by averaging the numeric grades
+            gpa = round(sum(numeric_grades) / len(numeric_grades), 2)
+
+            return gpa
+
+        except Exception as e:
+            print(f"Error calculating GPA for student {self.stud_id}: {e}")
+            return None
+
+        finally:
+            # Ensure cursor is closed even if an error occurs
+            cursor.close()
+        
 
 # Instructors class
 class Instructors:
@@ -535,7 +580,7 @@ def main():
 
         # Executes creation statements in database
         cursor = conn.cursor()
-        cursor.execute(create_students_table)
+        '''cursor.execute(create_students_table)
         cursor.execute(create_instructors_table)
         cursor.execute(create_departments_table)
         cursor.execute(create_registeredFor_table)
@@ -545,15 +590,25 @@ def main():
         cursor.execute(create_userInfo_table)
         cursor.execute(create_log_table)
         cursor.execute(create_student_course_table)
-        cursor.execute(create_instructor_course_table)
+        cursor.execute(create_instructor_course_table)'''
         conn.commit()
         #/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-        print('Finished making tables')
+        #print('Finished making tables')
 
         # Initialize StaffDatabaseOperations with connection
         operations = DatabaseOperations(conn)
 
+        #testing gpa calculation
+
+        '''student = Students(conn, 1)  # Initialize student with their ID
+        gpa = student.calculate_gpa(conn)
+
+        if gpa is not None:
+            print(f"The GPA for student ID 1 is: {gpa}")
+        else:
+            print("No GPA could be calculated.")
+        '''
 
     except psycopg2.Error as error:
         print(f"Error: {error}")
