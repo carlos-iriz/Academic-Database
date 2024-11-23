@@ -829,7 +829,6 @@ def main():
 # CANNOT Register or widthdraw students from course (Cannot add or remove student from courses)
 # Add overall check to make sure we are only giving them entires to alter in their department
 
-
 """
 Contains functions to allow staff to add, remove, and modify courses, instructors, students, 
 and department entries within their department. Staff can only manage entries within their department.

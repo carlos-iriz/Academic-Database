@@ -927,14 +927,69 @@ def user_info():
 #     # Start the Flask app in debug mode
 #     app.run(debug=True)
 
-
 #/////////////////////////////////////////////////////////////////////////////
 #Carlos added stuff
+#/////////////////////////////////////////////////////////////////////////////
+# Req 1
+@app.route('/staff_add_drop_modify', methods=['GET'])
+def staff_add_drop_modify():
+    return render_template('staff_add_drop_modify.html')
+
+@app.route('/process_staff_action', methods=['POST'])
+def process_staff_action():
+    action = request.form.get('action')
+    attribute = request.form.get('attribute')
+    modification = request.form.get('modification')
+    course_code = request.form.get('course_code')
+    instructor_id = request.form.get('instructor_id')
+    student_id = request.form.get('student_id')
+    staff_id = username
+
+    # Instance of your database_operations class
+    conn = get_db_connection()
+
+    db_ops = DatabaseOperations(conn)
+
+    if action == 'add_course':
+        staff_add_course(db_ops, course_code, request.form.get('course_name'), request.form.get('credits'), staff_id)
+    elif action == 'remove_course':
+        staff_remove_course(db_ops, course_code, staff_id)
+    elif action == 'modify_course':
+        staff_modify_course(db_ops, attribute, modification, course_code, staff_id)
+    elif action == 'add_instructor':
+        staff_add_instructor(db_ops, instructor_id, request.form.get('username'), request.form.get('email'),
+                             request.form.get('password'), request.form.get('hired_sem'),
+                             request.form.get('instructor_phone'), staff_id)
+    elif action == 'remove_instructor':
+        staff_remove_instructor(db_ops, instructor_id, staff_id)
+    elif action == 'modify_instructor':
+        staff_modify_instructor(db_ops, attribute, modification, instructor_id, staff_id)
+    elif action == 'add_student':
+        staff_add_student(db_ops, student_id, request.form.get('username'), request.form.get('email'),
+                          request.form.get('password'), request.form.get('gender'),
+                          request.form.get('major'), request.form.get('dept_id'), staff_id)
+    elif action == 'remove_student':
+        staff_remove_student(db_ops, student_id, staff_id)
+    elif action == 'modify_student':
+        staff_modify_student(db_ops, attribute, modification, student_id, staff_id)
+    elif action == 'modify_department':
+        staff_modify_department(db_ops, attribute, modification, request.form.get('dept_id'), staff_id)
+    elif action == 'assign_course':
+        staff_assign_course_to_instructor(db_ops, instructor_id, request.form.get('course_id'), staff_id)
+    else:
+        return "Invalid action", 400
+
+    return redirect(url_for('staff_add_drop_modify'))
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 2
 @app.route('/advisor_add_drop', methods=['GET'])
 def advisor_add_drop():
     return render_template('advisor_add_drop.html')
 
+@app.route('/add_student', methods=['POST'])
 def add_student():
+    conn = get_db_connection()
     operations = DatabaseOperations(conn)
     try:
         # Get form data
@@ -943,19 +998,21 @@ def add_student():
         semester = request.form['semester']
         year_taken = int(request.form['year_taken'])
         grade = request.form['grade']
-        advisor_id = request.form['advisor_id']
+        advisor_id = username
         
         # Call your function
-        advisor_add_student(operations, student_id, course_code, semester, year_taken, grade, advisor_id)
+        operations.advisor_add_student(student_id, course_code, semester, year_taken, grade, advisor_id)
         print('Added to Course')
-        #flash('Student successfully added to course!', 'success')
+        # Flash success message if needed
     except Exception as e:
-        print('Error')
-        #flash(f'Error adding student: {str(e)}', 'danger')
+        print(f'Error: {str(e)}')
+        # Flash error message if needed
     
-    return redirect('/advisor')
+    return redirect('/advisor_add_drop')
 
+@app.route('/drop_student', methods=['POST'])
 def drop_student():
+    conn = get_db_connection()
     operations = DatabaseOperations(conn)
     try:
         # Get form data
@@ -963,18 +1020,37 @@ def drop_student():
         course_code = request.form['course_code']
         semester = request.form['semester']
         year_taken = int(request.form['year_taken'])
-        advisor_id = request.form['advisor_id']
+        advisor_id = username
         
         # Call your function
-        advisor_drop_student(operations, student_id, course_code, semester, year_taken, advisor_id)
+        operations.advisor_drop_student(student_id, course_code, semester, year_taken, advisor_id)
         print('Dropped from Course')
-
-        #flash('Student successfully dropped from course!', 'success')
+        # Flash success message if needed
     except Exception as e:
-        print('Error')
-        #flash(f'Error dropping student: {str(e)}', 'danger')
+        print(f'Error: {str(e)}')
+        # Flash error message if needed
     
-    return redirect('/advisor')
+    return redirect('/advisor_add_drop')
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 3
+# Done already in pages attached to student and instructor
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 4
+# Covered by database with primary keys
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 5
+# Logging is already called within functions to add each log
+# Log.html covers already
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 6
+# 
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 7
 
 
 if __name__ == "__main__":
