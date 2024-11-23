@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Courses</title>
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">My Courses</h1>
+        
+        {% if user_role == 'Instructor' %}
+            <h3>Courses You Teach</h3>
+            <!-- Table for Instructor's Courses -->
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Course Name</th>
+                        <th>Course Code</th>
+                        <th>Instructor</th>
+                        <th>Department</th>
+                        <th>Credits</th>
+                        <th>Average Grade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                        <tr>
+                            <td>{{ course[0] }}</td>  <!-- course_name -->
+                            <td>{{ course[1] }}</td>  <!-- course_code -->
+                            <td>{{ course[2] }}</td>  <!-- instructor_id -->
+                            <td>{{ course[3] }}</td>  <!-- department_name -->
+                            <td>{{ course[4] }}</td>  <!-- credits -->
+                            <td>{{ (course[5] if course[5] is not none else 0) | round(2) }}</td> <!-- average_grade -->
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+
+        {% if user_role == 'Student' %}
+            <h3>Your Enrolled Courses</h3>
+            <!-- Table for Student's Courses -->
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Course Name</th>
+                        <th>Course Code</th>
+                        <th>Credits</th>
+                        <th>Grade</th>
+                        <th>Semester</th>
+                        <th>Year Taken</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses1 %}
+                        <tr>
+                            <td>{{ course[0] }}</td>  <!-- course_name -->
+                            <td>{{ course[1] }}</td>  <!-- course_code -->
+                            <td>{{ course[2] }}</td>  <!-- credits -->
+                            <td>{{ course[3] }}</td>  <!-- grade -->
+                            <td>{{ course[4] }}</td>  <!-- semester -->
+                            <td>{{ course[5] }}</td>  <!-- year_taken -->
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
