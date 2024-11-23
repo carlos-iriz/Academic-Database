@@ -169,6 +169,7 @@ def create_user():
 #     # courses = get_courses(session['username'])
 #     return render_template('department_summary.html')  # Assuming you have a course summary template
 
+
 @app.route('/department_summary')
 def department_summary():
     # Ensure the user is logged in
@@ -176,41 +177,125 @@ def department_summary():
         return redirect(url_for('login'))  # Redirect to login if no role or username is set
 
     user_role = session['user_role']
-    # Admin or another role can access the department summary page
-    if user_role not in ['Admin', 'Instructor']:
-        return redirect(url_for('login'))  # Redirect if user role is not allowed
+    user_id = session['username']  # The username stored in session
 
     # Connect to the database
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    departments = {}
-
     try:
-        # Fetch instructors grouped by department
-        query = """
-            SELECT i.instructor_id, i.name, i.department, i.email
-            FROM Instructors i
-            ORDER BY i.department, i.name
-        """
-        cursor.execute(query)
-        instructors = cursor.fetchall()
+        # Fetch the department ID for the logged-in user based on their role
+        if user_role == 'Instructor':
+            cursor.execute("SELECT dept_id FROM Instructors WHERE instructor_id = %s", (user_id,))
+        elif user_role == 'Advisor':
+            cursor.execute("SELECT dept_id FROM Advisors WHERE adv_id = %s", (user_id,))
+        elif user_role == 'Staff':
+            cursor.execute("SELECT dept_id FROM Staff WHERE staff_id = %s", (user_id,))
+        else:
+            return redirect(url_for('login'))  # Unauthorized role access
 
-        # Group instructors by department
-        for instructor in instructors:
-            department = instructor['department']
-            if department not in departments:
-                departments[department] = []
-            departments[department].append(instructor)
+        # Get the department ID from the query result
+        dept_result = cursor.fetchone()
+        if not dept_result:
+            return "Department not found for user.", 404
+        dept_id = dept_result[0]
+
+        # Fetch all users (excluding students) in the user's department
+        query = """
+            SELECT u.user_id, u.username, u.role, i.instructor_id, s.staff_id, a.adv_id
+            FROM UserInfo u
+            LEFT JOIN Instructors i ON u.user_id = i.instructor_id
+            LEFT JOIN Staff s ON u.user_id = s.staff_id
+            LEFT JOIN Advisors a ON u.user_id = a.adv_id
+            WHERE u.role != 'Student' AND (i.dept_id = %s OR s.dept_id = %s OR a.dept_id = %s)
+            ORDER BY u.username
+        """
+        cursor.execute(query, (dept_id, dept_id, dept_id))
+        department_summary_data = cursor.fetchall()
 
     except Exception as e:
-        print(f"Error fetching instructors: {e}")
+        print(f"Error fetching department summary: {e}")
+        department_summary_data = []
     finally:
         cursor.close()
         conn.close()
 
-    # Pass the grouped instructors data to the template
-    return render_template('department_summary.html', departments=departments)
+    # Pass the data to the template
+    return render_template('department_summary.html', department_summary=department_summary_data)
+
+
+# @app.route('/department_summary')
+# def department_summary():
+#     # Ensure the user is logged in
+#     if 'user_role' not in session or 'username' not in session:
+#         return redirect(url_for('login'))  # Redirect to login if no role or username is set
+
+#     user_role = session['user_role']
+#     username = session['username']  # The username stored in session
+
+#     # Connect to the database
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
+
+#     departments = {}
+
+#     try:
+#         # Retrieve user_id based on username
+#         cursor.execute("SELECT user_id FROM UserInfo WHERE username = %s", (username,))
+#         user_id_record = cursor.fetchone()
+#         if not user_id_record:
+#             return "User not found.", 404  # Handle missing user case
+#         user_id = user_id_record['user_id']
+
+#         if user_role in ['Admin', 'Instructor']:
+#             # Admins and Instructors can see all departments
+#             query = """
+#                 SELECT i.instructor_id, i.name, i.department, i.email
+#                 FROM Instructors i
+#                 ORDER BY i.department, i.name
+#             """
+#             cursor.execute(query)
+        
+#         elif user_role == 'Staff':
+#             # Staff can see only their associated department
+#             # Get the staff member's department
+#             dept_query = "SELECT dept_id FROM Staff WHERE staff_id = %s"
+#             cursor.execute(dept_query, (user_id,))
+#             staff_dept = cursor.fetchone()
+            
+#             if staff_dept:
+#                 # Fetch instructors only in the staff member's department
+#                 query = """
+#                     SELECT i.instructor_id, i.name, i.department, i.email
+#                     FROM Instructors i
+#                     WHERE i.department = %s
+#                     ORDER BY i.name
+#                 """
+#                 cursor.execute(query, (staff_dept['dept_id'],))
+#             else:
+#                 return "No department found for staff member.", 403
+
+#         else:
+#             return redirect(url_for('login'))  # Redirect if user role is not allowed
+
+#         # Process query results
+#         instructors = cursor.fetchall()
+
+#         # Group instructors by department
+#         for instructor in instructors:
+#             department = instructor['department']
+#             if department not in departments:
+#                 departments[department] = []
+#             departments[department].append(instructor)
+
+#     except Exception as e:
+#         print(f"Error fetching instructors: {e}")
+#     finally:
+#         cursor.close()
+#         conn.close()
+
+#     # Pass the grouped instructors data to the template
+#     return render_template('department_summary.html', departments=departments)
 
 
 @app.route('/edit_instructor_info')
@@ -461,24 +546,24 @@ def my_courses():
 def my_grades():
     # Ensure the user is logged in and has the correct role
     if 'user_role' not in session or 'username' not in session:
-        return redirect(url_for('login'))  # Redirect to login if no role or username is set
+        return redirect(url_for('login'))  # Redirect to login if no role or user_id is set
 
     user_role = session['user_role']
-    user_id = session['username']  # Assuming `username` is stored in session, which could be the student ID
+    user_id = session['username']  # Assuming `user_id` is the logged-in student's ID
 
     # Connect to the database
     conn = get_db_connection()
     cursor = conn.cursor()
 
-    # Fetch grades for the logged-in student
     grades = []
     try:
+        # Fetch grades if the logged-in user is a student
         if user_role == 'Student':
             query = """
                 SELECT c.course_name, c.course_code, sc.grade, c.credits
                 FROM StudentCourse sc
                 JOIN Courses c ON sc.course_code = c.course_code
-                WHERE sc.student_id = %s
+                WHERE sc.stud_id = %s
                 ORDER BY c.course_name
             """
             cursor.execute(query, (user_id,))
@@ -492,6 +577,7 @@ def my_grades():
 
     # Render the grades page with the fetched data
     return render_template('my_grades.html', grades=grades)
+
 
 
 # # My Information Route
@@ -617,6 +703,7 @@ def student_menu():
 #     # student_info = get_student_summary(session['username'])
 #     return render_template('student_summary.html')  # Assuming you have a student summary template
 
+
 @app.route('/student_summary')
 def student_summary():
     # Ensure the user is logged in
@@ -634,55 +721,109 @@ def student_summary():
     student_summary_data = []
 
     try:
+        # Fetch the department ID for the logged-in user based on their role
         if user_role == 'Instructor':
-            # Fetch students in the instructor's courses
-            query = """
-                SELECT DISTINCT s.student_id, u.name, u.email, s.major, s.year, c.course_name
-                FROM Students s
-                JOIN StudentCourse sc ON s.student_id = sc.student_id
-                JOIN Courses c ON sc.course_code = c.course_code
-                JOIN Instructors i ON i.dept_id = c.dept_id
-                JOIN Users u ON s.student_id = u.user_id
-                WHERE i.instructor_id = %s
-                ORDER BY s.student_id
-            """
-            cursor.execute(query, (user_id,))
-            student_summary_data = cursor.fetchall()
-
+            cursor.execute("SELECT dept_id FROM Instructors WHERE instructor_id = %s", (user_id,))
         elif user_role == 'Advisor':
-            # Fetch all students in the advisor's department
-            query = """
-                SELECT s.student_id, u.name, u.email, s.major, s.year
-                FROM Students s
-                JOIN Users u ON s.student_id = u.user_id
-                JOIN Advisors a ON s.dept_id = a.dept_id
-                WHERE a.advisor_id = %s
-                ORDER BY s.student_id
-            """
-            cursor.execute(query, (user_id,))
-            student_summary_data = cursor.fetchall()
-
+            cursor.execute("SELECT dept_id FROM Advisors WHERE adv_id = %s", (user_id,))
         elif user_role == 'Staff':
-            # Fetch all student information
-            query = """
-                SELECT s.student_id, u.name, u.email, s.major, s.year
-                FROM Students s
-                JOIN Users u ON s.student_id = u.user_id
-                ORDER BY s.student_id
-            """
-            cursor.execute(query)
-            student_summary_data = cursor.fetchall()
+            cursor.execute("SELECT dept_id FROM Staff WHERE staff_id = %s", (user_id,))
+        else:
+            return redirect(url_for('login'))  # Unauthorized role access
+
+        # Get the department ID from the query result
+        dept_result = cursor.fetchone()
+        if not dept_result:
+            return "Department not found for user.", 404
+        dept_id = dept_result[0]
+
+        # Fetch all students in the user's department 
+        query = """
+            SELECT s.stud_id, u.username AS name, s.major
+            FROM Students s
+            JOIN UserInfo u ON s.stud_id = u.user_id
+            WHERE s.dept_id = %s
+            ORDER BY s.stud_id
+        """
+        cursor.execute(query, (dept_id,))
+        student_summary_data = cursor.fetchall()
 
     except Exception as e:
         print(f"Error fetching student summary: {e}")
         student_summary_data = []
-
     finally:
         cursor.close()
         conn.close()
 
     # Render the template with student summary data
     return render_template('student_summary.html', student_summary=student_summary_data)
+
+# @app.route('/student_summary')
+# def student_summary():
+#     # Ensure the user is logged in
+#     if 'user_role' not in session or 'username' not in session:
+#         return redirect(url_for('login'))  # Redirect to login if no role or username is set
+
+#     user_role = session['user_role']
+#     user_id = session['username']  # Assuming `username` is stored in session
+
+#     # Connect to the database
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
+
+#     # Prepare data for student summary
+#     student_summary_data = []
+
+#     try:
+#         if user_role == 'Instructor':
+#             # Fetch students in the instructor's courses
+#             query = """
+#                 SELECT DISTINCT s.stud_id, s.major, c.course_name
+#                 FROM Students s
+#                 JOIN StudentCourse sc ON s.stud_id = sc.stud_id
+#                 JOIN Courses c ON sc.course_code = c.course_code
+#                 JOIN Instructors i ON i.dept_id = c.dept_id
+#                 JOIN userinfo u ON s.stud_id = u.user_id
+#                 WHERE i.instructor_id = %s
+#                 ORDER BY s.stud_id
+#             """
+#             cursor.execute(query, (user_id,))
+#             student_summary_data = cursor.fetchall()
+
+#         elif user_role == 'Advisor':
+#             # Fetch all students in the advisor's department
+#             query = """
+#                 SELECT s.stud_id, s.major
+#                 FROM Students s
+#                 JOIN userinfo u ON s.stud_id = u.user_id
+#                 JOIN Advisors a ON s.dept_id = a.dept_id
+#                 WHERE a.advisor_id = %s
+#                 ORDER BY s.stud_id
+#             """
+#             cursor.execute(query, (user_id,))
+#             student_summary_data = cursor.fetchall()
+
+#         elif user_role == 'Staff':
+#             # Fetch all student information
+#             query = """
+#                 SELECT s.stud_id, s.major
+#                 FROM Students s
+#                 JOIN userinfo u ON s.stud_id = u.user_id
+#                 ORDER BY s.stud_id
+#             """
+#             cursor.execute(query)
+#             student_summary_data = cursor.fetchall()
+
+#     except Exception as e:
+#         print(f"Error fetching student summary: {e}")
+#         student_summary_data = []
+
+#     finally:
+#         cursor.close()
+#         conn.close()
+
+#     # Render the template with student summary data
+#     return render_template('student_summary.html', student_summary=student_summary_data)
 
 
 # Student Summary Route
