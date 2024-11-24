@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>What-If GPA Analysis</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">What-If GPA Analysis</h1>
+
+        <!-- Form Card -->
+        <div class="card shadow-lg p-4">
+            <form method="POST" action="{{ url_for('what_if_analysis') }}">
+                <div class ="mb-3">
+                    <p class="text-center lead">Your current GPA is:</p>
+                    <h2 class="text-center text-primary">{{ gpa }}</h2>
+                    <p class="text-center lead">You've taken these many credits:</p>
+                    <h2 class="text-center text-primary">{{ creds }}</h2>
+                </div>
+
+                <div class="mb-3">
+                    <label for="grade_input" class="form-label">Enter Grades (separated by spaces, e.g., A B+ C):</label>
+                    <input type="text" id="grade_input" name="grade_input" class="form-control" required>
+                </div>
+
+                <div class="mb-3">
+                    <label for="credit_input" class="form-label">Enter Credits (separated by spaces, e.g., 3 4 3):</label>
+                    <input type="text" id="credit_input" name="credit_input" class="form-control" required>
+                </div>
+
+                <div class="d-flex justify-content-center">
+                    <button type="submit" class="btn btn-primary">Calculate GPA</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

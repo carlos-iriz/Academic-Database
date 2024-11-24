@@ -846,15 +846,76 @@ def user_info():
     return render_template('user_info.html', user_info=user_info)
  # Assuming you have a user info template
  
-#  @app.route('/what_if_analysis', methods=['GET', 'POST'])
-# def what_if_analysis():
-#     if request.method == 'POST':
-#         # Process What-If analysis calculations here
-#         # Scenario 1: Calculate effect on GPA with N additional courses and grades
-#         # Scenario 2: Calculate courses/grades needed to achieve desired GPA
-#         return render_template('what_if_results.html', results=calculated_data)
-#     return render_template('what_if_analysis.html')
+@app.route('/what_if_analysis', methods=['GET', 'POST'])
+def what_if_analysis():
+    # create student object with user ID or whatever to call calculateGPA from databast_backend.py
+    #currGPA = studentObj.calculate_gpa(x, y, z)
+    conn = get_db_connection()
+    cursor = conn.cursor()
 
+    stud_id = session['username']
+    currGPA = Students(conn, stud_id).calculate_gpa(conn)
+
+    query = """
+        SELECT SUM(credits)
+        FROM StudentCourse
+        WHERE stud_id = %s
+    """
+
+    cursor.execute(query, (stud_id,))
+    result = cursor.fetchone()
+    currCredits = result[0]
+
+    cursor.close()
+    conn.close()
+
+    if request.method == 'POST':
+    # Process What-If analysis calculations here
+        # Scenario 1: Calculate effect on GPA with N additional courses and grades
+
+        numerical_grade_mapping = {
+                'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+                'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
+            }
+        
+
+        # fetch N courses and grades from the HTML side using flask
+        grade_input = request.form.get("grade_input")
+        grades = grade_input.split()
+
+        # take credit inputs too and typecast em into ints
+        credits_input = request.form.get("credit_input")
+        credits = credits_input.split()
+
+        if not grade_input or not credits_input:
+            return "Please enter both grades and credits."
+        
+        try:
+            credits = [int(credit) for credit in credits]
+        except ValueError:
+            return "Invalid credit values entered. Please enter numeric values only."
+        
+        if len(grades) != len(credits):
+            return "The number of grades and credits must match."
+
+        # remap all grades that are inputted
+        numeric_grades = [numerical_grade_mapping[grade[0]] for grade in grades if grade[0] in numerical_grade_mapping]
+
+        # calculate new mini GPA 
+        newGradePts = 0
+        newCreds = 0
+        for n in range(len(numeric_grades)):
+            newGradePts += credits[n] * numeric_grades[n]
+            newCreds += credits[n]
+
+        # redo calculate GPA but include new courses added
+        newGPA = ((currGPA * currCredits) + newGradePts) / (currCredits + newCreds) 
+
+        calculated_data = "{0:.2f}".format(newGPA)
+
+
+        return render_template('what_if_results.html', results=calculated_data)
+    return render_template('what_if_analysis.html', gpa = currGPA, creds = currCredits)
 
 # @app.route('/gpa_summary')
 # def gpa_summary():
