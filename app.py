@@ -33,10 +33,10 @@ app.secret_key = secrets.token_hex(16)
 # Database connection setup
 def get_db_connection():
     conn = psycopg2.connect(
-        host="academic-database-main.chs4cey0uprk.us-east-2.rds.amazonaws.com",
+        host="",
         database="Academic_Database",
         user="postgres",
-        password="pops1234"
+        password=""
     )
     return conn
 
