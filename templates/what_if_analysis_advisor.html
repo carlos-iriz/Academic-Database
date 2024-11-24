@@ -10,16 +10,15 @@
 <body>
 
     <div class="container mt-5">
-        <h1 class="text-center mb-4">What-If GPA Analysis Student</h1>
+        <h1 class="text-center mb-4">What-If GPA Analysis Advisor</h1>
 
         <!-- Form Card -->
         <div class="card shadow-lg p-4">
-            <form method="POST" action="{{ url_for('what_if_analysis') }}">
-                <div class ="mb-3">
-                    <p class="text-center lead">Your current GPA is:</p>
-                    <h2 class="text-center text-primary">{{ gpa }}</h2>
-                    <p class="text-center lead">You've taken these many credits:</p>
-                    <h2 class="text-center text-primary">{{ creds }}</h2>
+            <form method="POST" action="{{ url_for('what_if_analysis_advisor') }}">
+
+                <div class="mb-3">
+                    <label for="id_input" class="form-label">Enter Student's ID:</label>
+                    <input type="text" id="id_input" name="id_input" class="form-control" required>
                 </div>
 
                 <div class="mb-3">

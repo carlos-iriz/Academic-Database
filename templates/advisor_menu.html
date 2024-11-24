@@ -41,6 +41,9 @@
                 <a href="{{ url_for('student_summary') }}" class="btn btn-primary btn-custom">View Student Summary</a>
             </div>
             <div class="form-group">
+                <a href="{{ url_for('instructor_summary') }}" class="btn btn-primary btn-custom">View Instructor Summary</a>
+            </div>
+            <div class="form-group">
                 <a href="{{ url_for('course_summary') }}" class="btn btn-success btn-custom">View Course Summary</a>
             </div>
             <div class="form-group">
@@ -49,8 +52,11 @@
             <div class="form-group">
                 <a href="{{ url_for('advisor_add_drop') }}" class="btn btn-info btn-custom">Add/Drop Students</a>
             </div>
-            <div class="col-md-3 mb-3">
-                <a href="{{ url_for('stats_menu') }}" class="btn btn-warning btn-block">Stats</a>
+            <div class="form-group">
+                <a href="{{ url_for('what_if_analysis_advisor') }}" class="btn btn-secondary btn-custom">What-If Analysis</a>
+            </div>
+            <div class="form-group">
+                <a href="{{ url_for('stats_menu') }}" class="btn btn-secondary btn-custom">Stats</a>
             </div>
             
             <div class="form-group">

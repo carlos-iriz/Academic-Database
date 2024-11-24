@@ -1,10 +1,10 @@
 import psycopg2
 
 # Database credentials
-hostname = ''
+hostname = 'academic-database-main.chs4cey0uprk.us-east-2.rds.amazonaws.com'
 database = 'Academic_Database'
 username = 'postgres'
-pwd = ''
+pwd = 'pops1234'
 port_id = 5432
 
 conn = None
@@ -427,16 +427,96 @@ class DatabaseOperations:
     #/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ############## REQUIREMENT 7 IS 4 FUNCTIONS BELOW ###############
+    # def gpa_stats(self, conn):
+    #     grade_mapping = {
+    #         'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+    #         'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
+    #     }
+
+    #     try:
+    #         cursor = conn.cursor()
+
+    #         # Query to fetch all grades along with majors and departments
+    #         cursor.execute(
+    #             """
+    #             SELECT s.major, d.name, sc.grade 
+    #             FROM studentcourse sc
+    #             JOIN students s ON sc.stud_id = s.stud_id
+    #             JOIN departments d ON s.major = d.name
+    #             """
+    #         )
+
+    #         rows = cursor.fetchall()
+
+    #         if not rows:
+    #             print("No data found.")
+
+    #         # Create dictionaries to group grades by major and department
+    #         major_grades = {}
+    #         department_grades = {}
+    #         for major, department, grade in rows:
+    #             if grade in grade_mapping:
+    #                 major_grades.setdefault(major, []).append(grade_mapping[grade])
+    #                 department_grades.setdefault(department, []).append(grade_mapping[grade])
+
+    #         # Calculate highest, lowest, and average GPA for each major
+    #         major_results = {}
+    #         for major, grades in major_grades.items():
+    #             highest_gpa = max(grades)
+    #             lowest_gpa = min(grades)
+    #             average_gpa = round(sum(grades) / len(grades), 2)
+    #             major_results[major] = {
+    #                 'Highest GPA': highest_gpa,
+    #                 'Lowest GPA': lowest_gpa,
+    #                 'Average GPA': average_gpa
+    #             }
+
+    #         # Calculate average GPA for each department
+    #         department_results = {}
+    #         for department, grades in department_grades.items():
+    #             average_gpa = round(sum(grades) / len(grades), 2)
+    #             department_results[department] = average_gpa
+
+    #         # Find department with highest and lowest average GPA
+    #         highest_dept = max(department_results, key=department_results.get)
+    #         lowest_dept = min(department_results, key=department_results.get)
+
+    #         return {
+    #         "major_results": major_results,
+    #         "department_results": department_results,
+    #         "highest_dept": (highest_dept, department_results[highest_dept]),
+    #         "lowest_dept": (lowest_dept, department_results[lowest_dept])
+    #         }
+
+
+    #         # # Beautify the output
+    #         # print("\n--- GPA Breakdown by Major ---")
+    #         # for major, stats in major_results.items():
+    #         #     print(f"Major: {major}")
+    #         #     for key, value in stats.items():
+    #         #         print(f"  {key}: {value}")
+    #         #     print()
+
+    #         # print("\n--- GPA Breakdown by Department ---")
+    #         # for department, avg_gpa in sorted(department_results.items(), key=lambda x: x[1], reverse=True):
+    #         #     print(f"Department: {department}, Average GPA: {avg_gpa}")
+
+    #         # print(f"\nDepartment with Highest Average GPA: {highest_dept}, {department_results[highest_dept]}")
+    #         # print(f"Department with Lowest Average GPA: {lowest_dept}, {department_results[lowest_dept]}")
+
+    #     except Exception as e:
+    #         print(f"Error: {e}")
+    #         return None
+    
+    
     def gpa_stats(self, conn):
         grade_mapping = {
-            'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
-            'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
-        }
+        'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+        'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
+    }
 
         try:
             cursor = conn.cursor()
-
-            # Query to fetch all grades along with majors and departments
             cursor.execute(
                 """
                 SELECT s.major, d.name, sc.grade 
@@ -445,68 +525,45 @@ class DatabaseOperations:
                 JOIN departments d ON s.major = d.name
                 """
             )
-
             rows = cursor.fetchall()
-
             if not rows:
-                print("No data found.")
+                return [], [], {}, {}
 
-            # Create dictionaries to group grades by major and department
             major_grades = {}
             department_grades = {}
+
             for major, department, grade in rows:
                 if grade in grade_mapping:
                     major_grades.setdefault(major, []).append(grade_mapping[grade])
                     department_grades.setdefault(department, []).append(grade_mapping[grade])
 
-            # Calculate highest, lowest, and average GPA for each major
-            major_results = {}
-            for major, grades in major_grades.items():
-                highest_gpa = max(grades)
-                lowest_gpa = min(grades)
-                average_gpa = round(sum(grades) / len(grades), 2)
-                major_results[major] = {
-                    'Highest GPA': highest_gpa,
-                    'Lowest GPA': lowest_gpa,
-                    'Average GPA': average_gpa
+            # Prepare the results
+            major_results = [
+                {
+                    "major": major,
+                    "highest_gpa": max(grades),
+                    "lowest_gpa": min(grades),
+                    "average_gpa": round(sum(grades) / len(grades), 2)
                 }
+                for major, grades in major_grades.items()
+            ]
 
-            # Calculate average GPA for each department
-            department_results = {}
-            for department, grades in department_grades.items():
-                average_gpa = round(sum(grades) / len(grades), 2)
-                department_results[department] = average_gpa
+            department_results = [
+                {
+                    "department": department,
+                    "average_gpa": round(sum(grades) / len(grades), 2)
+                }
+                for department, grades in department_grades.items()
+            ]
 
-            # Find department with highest and lowest average GPA
-            highest_dept = max(department_results, key=department_results.get)
-            lowest_dept = min(department_results, key=department_results.get)
+            # Determine the highest and lowest GPA departments
+            highest_dept = max(department_results, key=lambda x: x["average_gpa"])
+            lowest_dept = min(department_results, key=lambda x: x["average_gpa"])
 
-            return {
-            "major_results": major_results,
-            "department_results": department_results,
-            "highest_dept": (highest_dept, department_results[highest_dept]),
-            "lowest_dept": (lowest_dept, department_results[lowest_dept])
-            }
-
-
-            # # Beautify the output
-            # print("\n--- GPA Breakdown by Major ---")
-            # for major, stats in major_results.items():
-            #     print(f"Major: {major}")
-            #     for key, value in stats.items():
-            #         print(f"  {key}: {value}")
-            #     print()
-
-            # print("\n--- GPA Breakdown by Department ---")
-            # for department, avg_gpa in sorted(department_results.items(), key=lambda x: x[1], reverse=True):
-            #     print(f"Department: {department}, Average GPA: {avg_gpa}")
-
-            # print(f"\nDepartment with Highest Average GPA: {highest_dept}, {department_results[highest_dept]}")
-            # print(f"Department with Lowest Average GPA: {lowest_dept}, {department_results[lowest_dept]}")
+            return major_results, department_results, highest_dept, lowest_dept
 
         except Exception as e:
-            print(f"Error: {e}")
-            return None
+            return [], [], {"error": str(e)}, {}
     ###############################################################################
 
     def course_stats(self, conn):
@@ -672,18 +729,18 @@ class DatabaseOperations:
                     'total_credits': total_credits
                 })
 
-            # # Beautify and display the output
-            # print("\n--- Student Statistics by Major ---")
-            # for major, data in major_students.items():
-            #     print(f"\nMajor: {major}")
-            #     print("=" * 50)
-            #     for student in data['students']:
-            #         print(f"\n  Student ID: {student['stud_id']}")
-            #         print(f"  Gender: {student['gender']}")
-            #         print(f"  Total Credits: {student['total_credits']}")
-            #         print("-" * 50)
+            # Beautify and display the output
+            print("\n--- Student Statistics by Major ---")
+            for major, data in major_students.items():
+                print(f"\nMajor: {major}")
+                print("=" * 50)
+                for student in data['students']:
+                    print(f"\n  Student ID: {student['stud_id']}")
+                    print(f"  Gender: {student['gender']}")
+                    print(f"  Total Credits: {student['total_credits']}")
+                    print("-" * 50)
             
-            return major_students
+            # return major_students
 
         except Exception as e:
             print(f"Error: {e}")

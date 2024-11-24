@@ -337,12 +337,12 @@ def instructor_menu():
 @app.route('/instructor_summary')
 def instructor_summary():
     # Ensure the user is logged in and has admin or appropriate access
-    if 'user_role' not in session or 'username' not in session:
-        return redirect(url_for('login'))  # Redirect to login if no role or username is set
+    # if 'user_role' not in session or 'username' not in session:
+    #     return redirect(url_for('login'))  # Redirect to login if no role or username is set
 
     user_role = session['user_role']
     # Admin or another role can access the instructor summary page
-    if user_role not in ['Admin', 'Instructor']:  
+    if user_role not in ['Admin', 'Instructor', 'Advisor']:  
         return redirect(url_for('login'))  # Redirect if user role is not allowed
 
     # Connect to the database
@@ -353,9 +353,8 @@ def instructor_summary():
     try:
         # Fetch all instructors from the Instructors table
         query = """
-            SELECT instructor_id, name, department, email
+            SELECT instructor_id, dept_id
             FROM Instructors
-            ORDER BY name
         """
         cursor.execute(query)
         instructors = cursor.fetchall()
@@ -370,12 +369,12 @@ def instructor_summary():
     return render_template('instructor_summary.html', instructors=instructors)
 
 
-# # Log Route (Admin access)
-# @app.route('/log')
-# def log():
-#     # Log file or event viewer logic here
-#     # logs = fetch_logs_from_db()
-#     return render_template('log.html')  # Assuming you have a log template
+# Log Route (Admin access)
+@app.route('/log')
+def log():
+    # Log file or event viewer logic here
+    # logs = fetch_logs_from_db()
+    return render_template('log.html')  # Assuming you have a log template
 
 # Log operation (to be called after any INSERT, UPDATE, DELETE operation)
 def log_operation(user_id, operation_type, affected_table, old_data=None, new_data=None):
@@ -904,8 +903,82 @@ def what_if_analysis():
         calculated_data = "{0:.2f}".format(newGPA)
 
 
-        return render_template('what_if_results.html', results=calculated_data)
+        return render_template('what_if_results.html', prev_gpa=currGPA, results=calculated_data)
     return render_template('what_if_analysis.html', gpa = currGPA, creds = currCredits)
+
+@app.route('/what_if_analysis_advisor', methods=['GET', 'POST'])
+def what_if_analysis_advisor():
+
+    if request.method == 'POST':
+    # Process What-If analysis calculations here
+        # Scenario 1: Calculate effect on GPA with N additional courses and grades
+
+        numerical_grade_mapping = {
+                'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+                'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
+            }
+        
+        # get the student's id
+        id = request.form.get("id_input")
+
+        # fetch N courses and grades from the HTML side using flask
+        grade_input = request.form.get("grade_input")
+        grades = grade_input.split()
+
+        # take credit inputs too and typecast em into ints
+        credits_input = request.form.get("credit_input")
+        credits = credits_input.split()
+
+
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+
+        currGPA = Students(conn, id).calculate_gpa(conn)
+
+        query = """
+            SELECT SUM(credits)
+            FROM StudentCourse
+            WHERE stud_id = %s
+        """
+
+        cursor.execute(query, (id,))
+        result = cursor.fetchone()
+        currCredits = result[0]
+
+        cursor.close()
+        conn.close()
+
+
+        if not grade_input or not credits_input:
+            return "Please enter both grades and credits."
+        
+        try:
+            credits = [int(credit) for credit in credits]
+        except ValueError:
+            return "Invalid credit values entered. Please enter numeric values only."
+        
+        if len(grades) != len(credits):
+            return "The number of grades and credits must match."
+
+        # remap all grades that are inputted
+        numeric_grades = [numerical_grade_mapping[grade[0]] for grade in grades if grade[0] in numerical_grade_mapping]
+
+        # calculate new mini GPA 
+        newGradePts = 0
+        newCreds = 0
+        for n in range(len(numeric_grades)):
+            newGradePts += credits[n] * numeric_grades[n]
+            newCreds += credits[n]
+
+        # redo calculate GPA but include new courses added
+        newGPA = ((currGPA * currCredits) + newGradePts) / (currCredits + newCreds) 
+
+        calculated_data = "{0:.2f}".format(newGPA)
+
+
+        return render_template('what_if_results_advisor.html', s_id=id, prev_gpa=currGPA, results=calculated_data)
+    return render_template('what_if_analysis_advisor.html')
 
 
 # Student Summary Route
@@ -965,7 +1038,6 @@ def user_info():
 #     # Logic to fetch and rank departments by GPA
 #     return render_template('department_gpa_ranking.html', ranking=department_ranking_data)
 
-
 # @app.route('/semester_report')
 # def semester_report():
 #     # Fetch semester data for enrollments and average grades
@@ -979,51 +1051,6 @@ def user_info():
 
 
 
-# Function to open all routes in the default web browser when the app starts
-# def visit_all_routes():
-#     base_url = "http://127.0.0.1:5000"  # Adjust this if your app runs on a different host/port
-#     routes = [
-#         '/login',
-#         '/admin_menu',
-#         '/advisor_menu',
-#         '/course_summary',
-#         '/create_user',
-#         '/department_summary',
-#         '/edit_instructor_info',
-#         '/edit_user',
-#         '/gpa_calculator',
-#         '/instructor_menu',
-#         '/instructor_summary',
-#         '/log',
-#         '/logout',
-#         '/my_courses',
-#         '/my_grades',
-#         '/my_info',
-#         '/staff_menu',
-#         '/student_info',
-#         '/student_menu',
-#         '/student_summary',
-#         '/student_summary_advisor',
-#         '/user_info'
-#     ]
-
-#     for route in routes:
-#         full_url = base_url + route
-#         #response = client.get(route)
-#         #print(f"Visiting {route} - Status Code: {response.status_code}")
-#         print(f"Opening {full_url}")
-#         webbrowser.open(full_url)
-#         time.sleep(1)  # Delay to prevent opening all pages at once
-
-# Call this function once your app is running
-
-
-# if __name__ == "__main__":
-#     # Automatically open the browser to the Flask app URL
-#     webbrowser.open('http://127.0.0.1:5000/staff_menu')
-    
-#     # Start the Flask app in debug mode
-#     app.run(debug=True)
 
 
 @app.route('/staff_add_drop_modify', methods=['GET'])
@@ -1048,31 +1075,31 @@ def process_staff_action():
     db_ops = DatabaseOperations(conn)
 
     if action == 'add_course':
-        staff_add_course(db_ops, course_code, request.form.get('course_name'), request.form.get('credits'), staff_id)
+        DatabaseOperations.staff_add_course(db_ops, course_code, request.form.get('course_name'), request.form.get('credits'), staff_id)
     elif action == 'remove_course':
-        staff_remove_course(db_ops, course_code, staff_id)
+         DatabaseOperations.staff_remove_course(db_ops, course_code, staff_id)
     elif action == 'modify_course':
-        staff_modify_course(db_ops, attribute, modification, course_code, staff_id)
+         DatabaseOperations.staff_modify_course(db_ops, attribute, modification, course_code, staff_id)
     elif action == 'add_instructor':
-        staff_add_instructor(db_ops, instructor_id, request.form.get('username'), request.form.get('email'),
+        DatabaseOperations.staff_add_instructor(db_ops, instructor_id, request.form.get('username'), request.form.get('email'),
                              request.form.get('password'), request.form.get('hired_sem'),
                              request.form.get('instructor_phone'), staff_id)
     elif action == 'remove_instructor':
-        staff_remove_instructor(db_ops, instructor_id, staff_id)
+         DatabaseOperations.staff_remove_instructor(db_ops, instructor_id, staff_id)
     elif action == 'modify_instructor':
-        staff_modify_instructor(db_ops, attribute, modification, instructor_id, staff_id)
+         DatabaseOperations.staff_modify_instructor(db_ops, attribute, modification, instructor_id, staff_id)
     elif action == 'add_student':
-        staff_add_student(db_ops, student_id, request.form.get('username'), request.form.get('email'),
+         DatabaseOperations.staff_add_student(db_ops, student_id, request.form.get('username'), request.form.get('email'),
                           request.form.get('password'), request.form.get('gender'),
                           request.form.get('major'), request.form.get('dept_id'), staff_id)
     elif action == 'remove_student':
-        staff_remove_student(db_ops, student_id, staff_id)
+        DatabaseOperations.staff_remove_student(db_ops, student_id, staff_id)
     elif action == 'modify_student':
-        staff_modify_student(db_ops, attribute, modification, student_id, staff_id)
+        DatabaseOperations.staff_modify_student(db_ops, attribute, modification, student_id, staff_id)
     elif action == 'modify_department':
-        staff_modify_department(db_ops, attribute, modification, request.form.get('dept_id'), staff_id)
+        DatabaseOperations.staff_modify_department(db_ops, attribute, modification, request.form.get('dept_id'), staff_id)
     elif action == 'assign_course':
-        staff_assign_course_to_instructor(db_ops, instructor_id, request.form.get('course_id'), staff_id)
+        DatabaseOperations.staff_assign_course_to_instructor(db_ops, instructor_id, request.form.get('course_id'), staff_id)
     else:
         return "Invalid action", 400
 
@@ -1196,49 +1223,101 @@ def drop_student():
 #     return render_template('student_stats.html')  # Render the HTML file
 
 
+# # GPA Stats Routes
+# @app.route('/gpa_stats', methods=['GET'])
+# def gpa_stats():
+#     conn = get_db_connection()
+#     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
+#     result = db_ops.gpa_stats(conn)        # Call the gpa_stats method on the instance
+#     return jsonify(result)              # Convert result dictionary to JSON
+
+# @app.route('/gpa_stats_page', methods=['GET'])
+# def gpa_stats_page():
+#     return render_template('gpa_stats.html')  # Render the HTML file
+
+# # Course Stats Routes
+# @app.route('/course_stats', methods=['GET'])
+# def course_stats():
+#     conn = get_db_connection()
+#     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
+#     result = db_ops.course_stats(conn)     # Call the course_stats method on the instance
+#     return jsonify(result)             # Convert result dictionary to JSON
+
+# @app.route('/course_stats_page', methods=['GET'])
+# def course_stats_page():
+#     return render_template('course_stats.html')  # Render the HTML file
+
+# # Instructor Stats Routes
+# @app.route('/instructor_stats', methods=['GET'])
+# def instructor_stats():
+#     conn = get_db_connection()
+#     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
+#     result = db_ops.instructor_stats(conn) # Call the instructor_stats method on the instance
+#     return jsonify(result)             # Convert result dictionary to JSON
+
+# @app.route('/instructor_stats_page', methods=['GET'])
+# def instructor_stats_page():
+#     return render_template('instructor_stats.html')  # Render the HTML file
+
+# # Student Stats Routes
+# @app.route('/student_stats', methods=['GET'])
+# def student_stats():
+#     conn = get_db_connection()
+#     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
+#     result = db_ops.student_stats(conn)    # Call the student_stats method on the instance
+#     return jsonify(result)             # Convert result dictionary to JSON
+
+# @app.route('/student_stats_page', methods=['GET'])
+# def student_stats_page():
+#     return render_template('student_stats.html')  # Render the HTML file
+
+
 # GPA Stats Routes
 @app.route('/gpa_stats', methods=['GET'])
 def gpa_stats():
     conn = get_db_connection()
     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-    result = db_ops.gpa_stats()        # Call the gpa_stats method on the instance
-    return jsonify(result)              # Convert result dictionary to JSON
+    result = db_ops.gpa_stats(conn)    # Call the gpa_stats method on the instance
+    return render_template('gpa_stats.html', stats=result)  # Render the HTML file with data
 
 @app.route('/gpa_stats_page', methods=['GET'])
 def gpa_stats_page():
     return render_template('gpa_stats.html')  # Render the HTML file
+
 
 # Course Stats Routes
 @app.route('/course_stats', methods=['GET'])
 def course_stats():
     conn = get_db_connection()
     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-    result = db_ops.course_stats()     # Call the course_stats method on the instance
-    return jsonify(result)             # Convert result dictionary to JSON
+    result = db_ops.course_stats(conn) # Call the course_stats method on the instance
+    return render_template('course_stats.html', stats=result)  # Render the HTML file with data
 
 @app.route('/course_stats_page', methods=['GET'])
 def course_stats_page():
     return render_template('course_stats.html')  # Render the HTML file
+
 
 # Instructor Stats Routes
 @app.route('/instructor_stats', methods=['GET'])
 def instructor_stats():
     conn = get_db_connection()
     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-    result = db_ops.instructor_stats() # Call the instructor_stats method on the instance
-    return jsonify(result)             # Convert result dictionary to JSON
+    result = db_ops.instructor_stats(conn) # Call the instructor_stats method on the instance
+    return render_template('instructor_stats.html', stats=result)  # Render the HTML file with data
 
 @app.route('/instructor_stats_page', methods=['GET'])
 def instructor_stats_page():
     return render_template('instructor_stats.html')  # Render the HTML file
+
 
 # Student Stats Routes
 @app.route('/student_stats', methods=['GET'])
 def student_stats():
     conn = get_db_connection()
     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-    result = db_ops.student_stats(conn)    # Call the student_stats method on the instance
-    return jsonify(result)             # Convert result dictionary to JSON
+    result = db_ops.student_stats(conn) # Call the student_stats method on the instance
+    return render_template('student_stats.html', stats=result)  # Render the HTML file with data
 
 @app.route('/student_stats_page', methods=['GET'])
 def student_stats_page():
@@ -1246,11 +1325,68 @@ def student_stats_page():
 
 
 
+# #Function to open all routes in the default web browser when the app starts
+# def visit_all_routes():
+#     base_url = "http://127.0.0.1:5000"  # Adjust this if your app runs on a different host/port
+#     routes = [
+#         '/login',
+#         '/admin_menu',
+#         '/advisor_menu',
+#         '/course_summary',
+#         '/create_user',
+#         '/department_summary',
+#         '/edit_instructor_info',
+#         '/edit_user',
+#         '/gpa_calculator',
+#         '/instructor_menu',
+#         '/instructor_summary',
+#         '/log',
+#         '/logout',
+#         '/my_courses',
+#         '/my_grades',
+#         '/my_info',
+#         '/staff_menu',
+#         '/student_info',
+#         '/student_menu',
+#         '/student_summary',
+#         '/student_summary_advisor',
+#         '/user_info'
+#         '/advisor_add_drop',
+#         '/course_stats',
+#         '/gpa_stats',
+#         '/instructor_stats',
+#         '/staff_add_drop_modify',
+#         '/stats_menu',
+#         '/student_stats',
+#         '/what_if_analysis',
+#         '/what_if_results',
+#         '/what_if_analysis_advisor',
+#         '/what_if_results_advisor',
+#     ]
+
+#     for route in routes:
+#         full_url = base_url + route
+#         #response = client.get(route)
+#         #print(f"Visiting {route} - Status Code: {response.status_code}")
+#         print(f"Opening {full_url}")
+#         webbrowser.open(full_url)
+#         time.sleep(1)  # Delay to prevent opening all pages at once
+
+# Call this function once your app is running
+
+
+# if __name__ == "__main__":
+#     # Automatically open the browser to the Flask app URL
+#     webbrowser.open('http://127.0.0.1:5000/staff_menu')
+    
+#     # Start the Flask app in debug mode
+#     app.run(debug=True)
+
 if __name__ == "__main__":
     # Automatically open the browser to the Flask app URL
     webbrowser.open('http://127.0.0.1:5000/login')
 
-    #visit_all_routes()
+    # visit_all_routes()
     # Start the Flask app in debug mode
     app.run(debug=True, use_reloader=False)  # use_reloader=False to prevent the test client from running twice
     

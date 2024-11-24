@@ -1,29 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPA Statistics</title>
-    <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: auto; padding: 20px; }
-        h1 { text-align: center; color: #333; }
-        .stat-item { margin-bottom: 20px; }
-        .label { font-weight: bold; color: #555; }
-    </style>
 </head>
 <body>
+    <h1>GPA Statistics</h1>
 
-<h1>GPA Statistics</h1>
+    <h2>Major Results</h2>
+    <ul>
+        {% for result in major_results %}
+        <li>
+            Major: {{ result.major }}<br>
+            Highest GPA: {{ result.highest_gpa }}<br>
+            Lowest GPA: {{ result.lowest_gpa }}<br>
+            Average GPA: {{ result.average_gpa }}
+        </li>
+        {% endfor %}
+    </ul>
 
-{% if stats %}
-    {% for key, value in stats.items() %}
-        <div class="stat-item">
-            <span class="label">{{ key }}:</span> {{ value }}
-        </div>
-    {% endfor %}
-{% else %}
-    <p>No GPA statistics available.</p>
-{% endif %}
+    <h2>Department Results</h2>
+    <ul>
+        {% for dept in department_results %}
+        <li>
+            Department: {{ dept.department }}<br>
+            Average GPA: {{ dept.average_gpa }}
+        </li>
+        {% endfor %}
+    </ul>
 
+    <h2>Highest Department</h2>
+    <p>
+        Department: {{ highest_dept.department }}<br>
+        Average GPA: {{ highest_dept.average_gpa }}
+    </p>
+
+    <h2>Lowest Department</h2>
+    <p>
+        Department: {{ lowest_dept.department }}<br>
+        Average GPA: {{ lowest_dept.average_gpa }}
+    </p>
 </body>
 </html>
