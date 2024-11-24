@@ -4,7 +4,7 @@ from flask import Flask, jsonify, request, session, render_template, redirect, u
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import webbrowser
-import time
+from datetime import datetime
 
 
 from Database_Backend import (
@@ -12,7 +12,6 @@ from Database_Backend import (
 )
 
 import secrets
-
 
 
 
@@ -51,6 +50,11 @@ def user_info_check(username, password):
     conn.close()
 
     return result
+
+@app.route('/')
+def home():
+    return render_template('index.html')  # Ensure this template exists
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -134,6 +138,28 @@ def course_summary():
 
     # Fetch all results
     courses = cursor.fetchall()
+    
+    query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+    cursor.execute(query2)
+    entry = cursor.fetchone()[0] + 1
+
+    # log the view
+    log_data = {
+        'entry': entry,
+        'timestamp': datetime.now(),  # Current timestamp
+        'user_id': session['username'], # User performing the operation
+        'operationtype': "VIEW", # Type of operation
+        'old_data': "Course Viewing",
+        'new_data': None # New data (if any)
+    }
+
+    db_ops = DatabaseOperations(conn)
+
+    db_ops.add_entry("Log", log_data)
 
     # Close the database connection
     cursor.close()
@@ -149,13 +175,6 @@ def create_user():
     # You can fetch course details here (e.g., list of courses)
     # courses = get_courses(session['username'])
     return render_template('create_user.html')  # Assuming you have a course summary template
-
-# @app.route('/department_summary')
-# def department_summary():
-#     # You can fetch course details here (e.g., list of courses)
-#     # courses = get_courses(session['username'])
-#     return render_template('department_summary.html')  # Assuming you have a course summary template
-
 
 @app.route('/department_summary')
 def department_summary():
@@ -173,10 +192,13 @@ def department_summary():
     try:
         # Fetch the department ID for the logged-in user based on their role
         if user_role == 'Instructor':
+            table = "Instructors"
             cursor.execute("SELECT dept_id FROM Instructors WHERE instructor_id = %s", (user_id,))
         elif user_role == 'Advisor':
+            table = "Advisors"
             cursor.execute("SELECT dept_id FROM Advisors WHERE adv_id = %s", (user_id,))
         elif user_role == 'Staff':
+            table = "Staff"
             cursor.execute("SELECT dept_id FROM Staff WHERE staff_id = %s", (user_id,))
         else:
             return redirect(url_for('login'))  # Unauthorized role access
@@ -204,6 +226,27 @@ def department_summary():
         print(f"Error fetching department summary: {e}")
         department_summary_data = []
     finally:
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': table + " Department Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
         cursor.close()
         conn.close()
 
@@ -310,10 +353,6 @@ def gpa_calculator():
 def instructor_menu():
     return render_template('instructor_menu.html')
 
-# @app.route('/instructor_summary')
-# def instructor_summary():
-
-#     return render_template('instructor_summary.html')  # Pass the course data to the template
 
 @app.route('/instructor_summary')
 def instructor_summary():
@@ -343,6 +382,27 @@ def instructor_summary():
     except Exception as e:
         print(f"Error fetching instructors: {e}")
     finally:
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': "Instructor Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
         cursor.close()
         conn.close()
 
@@ -350,12 +410,30 @@ def instructor_summary():
     return render_template('instructor_summary.html', instructors=instructors)
 
 
-# Log Route (Admin access)
+# # Log Route (Admin access)
+# @app.route('/log')
+# def log():
+#     # Log file or event viewer logic here
+#     # logs = fetch_logs_from_db()
+#     return render_template('log.html')  # Assuming you have a log template
+
+from flask import render_template, session
+from datetime import datetime
+
+from flask import render_template
+
 @app.route('/log')
 def log():
-    # Log file or event viewer logic here
-    # logs = fetch_logs_from_db()
-    return render_template('log.html')  # Assuming you have a log template
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    # Fetch log entries from the database
+    query = "SELECT entry, timestamp, user_id, operationtype, old_data, new_data FROM log ORDER BY timestamp DESC"
+    cursor.execute(query)
+    logs = cursor.fetchall()
+
+    # Pass logs to the template
+    return render_template('log.html', logs=logs)
+
 
 # Log operation (to be called after any INSERT, UPDATE, DELETE operation)
 def log_operation(user_id, operation_type, affected_table, old_data=None, new_data=None):
@@ -835,6 +913,28 @@ def what_if_analysis():
     cursor.execute(query, (stud_id,))
     result = cursor.fetchone()
     currCredits = result[0]
+    
+    query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+    cursor.execute(query2)
+    entry = cursor.fetchone()[0] + 1
+
+    # log the view
+    log_data = {
+        'entry': entry,
+        'timestamp': datetime.now(),  # Current timestamp
+        'user_id': session['username'], # User performing the operation
+        'operationtype': "VIEW", # Type of operation
+        'old_data': "Grade Viewing",
+        'new_data': None # New data (if any)
+    }
+
+    db_ops = DatabaseOperations(conn)
+
+    db_ops.add_entry("Log", log_data)
 
     cursor.close()
     conn.close()
@@ -926,6 +1026,29 @@ def what_if_analysis_advisor():
         cursor.execute(query, (id,))
         result = cursor.fetchone()
         currCredits = result[0]
+        
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': "Grade Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
+
 
         cursor.close()
         conn.close()

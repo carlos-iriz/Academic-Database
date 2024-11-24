@@ -2,36 +2,71 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>System Logs</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log Entries</title>
+    <!-- Link to Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 900px;
+            margin-top: 30px;
+        }
+        .table-custom {
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #343a40;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <div class="container my-5">
-        <h1 class="mb-4">System Logs</h1>
-        <table class="table table-striped">
-            <thead>
+    <div class="container">
+        <div class="header-title">System Log</div>
+        
+        <!-- Log Table -->
+        <table class="table table-bordered table-custom">
+            <thead class="thead-dark">
                 <tr>
-                    <th>Timestamp</th>
-                    <th>User</th>
-                    <th>Operation</th>
-                    <th>Affected Table</th>
-                    <th>Old Data</th>
-                    <th>New Data</th>
+                    <th scope="col">Entry</th>
+                    <th scope="col">Timestamp</th>
+                    <th scope="col">User</th>
+                    <th scope="col">Operation Type</th>
+                    <th scope="col">Old Data</th>
+                    <th scope="col">New Data</th>
                 </tr>
             </thead>
             <tbody>
                 {% for log in logs %}
-                    <tr>
-                        <td>{{ log.timestamp }}</td>
-                        <td>{{ log.user_id }}</td>
-                        <td>{{ log.operationtype }}</td>
-                        <td>{{ log.affected_table }}</td>
-                        <td>{{ log.old_data if log.old_data else 'N/A' }}</td>
-                        <td>{{ log.new_data if log.new_data else 'N/A' }}</td>
-                    </tr>
+                <tr>
+                    <td>{{ log[0] }}</td> <!-- Entry ID -->
+                    <td>{{ log[1] }}</td> <!-- Timestamp -->
+                    <td>{{ log[2] }}</td> <!-- User ID -->
+                    <td>{{ log[3] }}</td> <!-- Operation Type -->
+                    <td>{{ log[4] }}</td> <!-- Old Data -->
+                    <td>{{ log[5] or 'N/A' }}</td> <!-- New Data -->
+                </tr>
                 {% endfor %}
             </tbody>
         </table>
+        
+        <!-- Back Button -->
+        <div class="form-group text-center">
+            <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg">Back to Dashboard</a>
+        </div>
     </div>
+
+    <!-- Link to Bootstrap JS and dependencies (Popper.js and jQuery) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

@@ -37,7 +37,6 @@
             <div class="header-title">Welcome to Your Admin Menu</div>
             <p class="text-muted mb-4">Options Below:</p>
 
-            
             <div class="form-group">
                 <a href="{{ url_for('log') }}" class="btn btn-warning btn-custom">Display Logs</a>
             </div>
@@ -45,10 +44,10 @@
                 <a href="{{ url_for('my_info') }}" class="btn btn-info btn-custom">View My Information</a>
             </div>
             <div class="form-group">
-                <a href="{{ url_for('logout') }}" class="btn btn-danger btn-custom">Logout</a>
+                <a href="{{ url_for('stats_menu') }}" class="btn btn-secondary btn-custom">Stats</a>
             </div>
             <div class="form-group">
-                <a href="{{ url_for('stats_menu') }}" class="btn btn-secondary btn-custom">Stats</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-danger btn-custom">Logout</a>
             </div>
         </div>
     </div>
