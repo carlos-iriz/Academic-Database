@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPA Statistics</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: auto; padding: 20px; }
+        h1 { text-align: center; color: #333; }
+        .stat-item { margin-bottom: 20px; }
+        .label { font-weight: bold; color: #555; }
+    </style>
+</head>
+<body>
+
+<h1>GPA Statistics</h1>
+
+{% if stats %}
+    {% for key, value in stats.items() %}
+        <div class="stat-item">
+            <span class="label">{{ key }}:</span> {{ value }}
+        </div>
+    {% endfor %}
+{% else %}
+    <p>No GPA statistics available.</p>
+{% endif %}
+
+</body>
+</html>

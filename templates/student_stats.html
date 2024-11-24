@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Statistics</title>
+</head>
+<body>
+
+<h1>Student Statistics by Major</h1>
+
+{% if stats %}
+    {% for major, students in stats.items() %}
+        <h2>{{ major }}</h2>
+        {% for student in students %}
+            <div>
+                <strong>Student ID:</strong> {{ student['id'] }}<br>
+                <strong>Gender:</strong> {{ student['gender'] }}<br>
+                <strong>Total Credits:</strong> {{ student['total_credits'] }}
+            </div>
+            <hr>
+        {% endfor %}
+    {% endfor %}
+{% else %}
+    <p>No student statistics available.</p>
+{% endif %}
+
+</body>
+</html>

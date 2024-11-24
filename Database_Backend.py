@@ -1,10 +1,10 @@
 import psycopg2
 
 # Database credentials
-hostname = ''
+hostname = 'academic-database-main.chs4cey0uprk.us-east-2.rds.amazonaws.com'
 database = 'Academic_Database'
 username = 'postgres'
-pwd = ''
+pwd = 'pops1234'
 port_id = 5432
 
 conn = None
@@ -481,20 +481,28 @@ class DatabaseOperations:
             highest_dept = max(department_results, key=department_results.get)
             lowest_dept = min(department_results, key=department_results.get)
 
-            # Beautify the output
-            print("\n--- GPA Breakdown by Major ---")
-            for major, stats in major_results.items():
-                print(f"Major: {major}")
-                for key, value in stats.items():
-                    print(f"  {key}: {value}")
-                print()
+            return {
+            "major_results": major_results,
+            "department_results": department_results,
+            "highest_dept": (highest_dept, department_results[highest_dept]),
+            "lowest_dept": (lowest_dept, department_results[lowest_dept])
+            }
 
-            print("\n--- GPA Breakdown by Department ---")
-            for department, avg_gpa in sorted(department_results.items(), key=lambda x: x[1], reverse=True):
-                print(f"Department: {department}, Average GPA: {avg_gpa}")
 
-            print(f"\nDepartment with Highest Average GPA: {highest_dept}, {department_results[highest_dept]}")
-            print(f"Department with Lowest Average GPA: {lowest_dept}, {department_results[lowest_dept]}")
+            # # Beautify the output
+            # print("\n--- GPA Breakdown by Major ---")
+            # for major, stats in major_results.items():
+            #     print(f"Major: {major}")
+            #     for key, value in stats.items():
+            #         print(f"  {key}: {value}")
+            #     print()
+
+            # print("\n--- GPA Breakdown by Department ---")
+            # for department, avg_gpa in sorted(department_results.items(), key=lambda x: x[1], reverse=True):
+            #     print(f"Department: {department}, Average GPA: {avg_gpa}")
+
+            # print(f"\nDepartment with Highest Average GPA: {highest_dept}, {department_results[highest_dept]}")
+            # print(f"Department with Lowest Average GPA: {lowest_dept}, {department_results[lowest_dept]}")
 
         except Exception as e:
             print(f"Error: {e}")
@@ -551,18 +559,20 @@ class DatabaseOperations:
                     'enrollments': enrollments,
                     'average_grade': average_grade
                 })
+            
+            return results
 
-            # Beautify and display the output
-            print("\n--- Course Statistics by Semester ---")
-            for semester, stats in sorted(results.items()):
-                print(f"\n{'='*50}")
-                print(f"Semester: {semester}")
-                print(f"{'='*50}")
-                for course in stats:
-                    print(f"\n    Course:               {course['course_code']}")
-                    print(f"    Total Enrollments:    {course['enrollments']}")
-                    print(f"    Average Grade:        {course['average_grade']}")
-                    print(f"{'-'*50}")
+            # # Beautify and display the output
+            # print("\n--- Course Statistics by Semester ---")
+            # for semester, stats in sorted(results.items()):
+            #     print(f"\n{'='*50}")
+            #     print(f"Semester: {semester}")
+            #     print(f"{'='*50}")
+            #     for course in stats:
+            #         print(f"\n    Course:               {course['course_code']}")
+            #         print(f"    Total Enrollments:    {course['enrollments']}")
+            #         print(f"    Average Grade:        {course['average_grade']}")
+            #         print(f"{'-'*50}")
 
         except Exception as e:
             print(f"Error: {e}")
@@ -609,17 +619,18 @@ class DatabaseOperations:
                     'total_students': total_students
                 })
 
-            # Beautify and display the output
-            print("\n--- Instructor Student Count by Major for Each Course ---")
-            for instructor_id, data in instructor_courses.items():
-                print(f"\nInstructor ID: {instructor_id}")
-                print("=" * 50)
-                for course in data['courses']:
-                    print(f"\n  Course: {course['course_code']} - {course['course_name']}")
-                    print(f"  Major: {course['major_name']}")
-                    print(f"  Total Students: {course['total_students']}")
-                    print("-" * 50)
+            # # Beautify and display the output
+            # print("\n--- Instructor Student Count by Major for Each Course ---")
+            # for instructor_id, data in instructor_courses.items():
+            #     print(f"\nInstructor ID: {instructor_id}")
+            #     print("=" * 50)
+            #     for course in data['courses']:
+            #         print(f"\n  Course: {course['course_code']} - {course['course_name']}")
+            #         print(f"  Major: {course['major_name']}")
+            #         print(f"  Total Students: {course['total_students']}")
+            #         print("-" * 50)
 
+            return instructor_courses
 
         except Exception as e:
             print(f"Error: {e}")
@@ -661,16 +672,18 @@ class DatabaseOperations:
                     'total_credits': total_credits
                 })
 
-            # Beautify and display the output
-            print("\n--- Student Statistics by Major ---")
-            for major, data in major_students.items():
-                print(f"\nMajor: {major}")
-                print("=" * 50)
-                for student in data['students']:
-                    print(f"\n  Student ID: {student['stud_id']}")
-                    print(f"  Gender: {student['gender']}")
-                    print(f"  Total Credits: {student['total_credits']}")
-                    print("-" * 50)
+            # # Beautify and display the output
+            # print("\n--- Student Statistics by Major ---")
+            # for major, data in major_students.items():
+            #     print(f"\nMajor: {major}")
+            #     print("=" * 50)
+            #     for student in data['students']:
+            #         print(f"\n  Student ID: {student['stud_id']}")
+            #         print(f"  Gender: {student['gender']}")
+            #         print(f"  Total Credits: {student['total_credits']}")
+            #         print("-" * 50)
+            
+            return major_students
 
         except Exception as e:
             print(f"Error: {e}")
@@ -1176,6 +1189,228 @@ def view_log(database_operations_instance):
 ##########################################################################################################################
 ##########################################################################################################################
 # Requirement 7: Fullfilled in database operations class
+
+# def gpa_stats(database_operations_instance, user_id):
+#     """
+#     Retrieves GPA statistics by major and department.
+    
+#     Parameters:
+#     - database_operations_instance: An instance of DatabaseOperations class for querying.
+#     - user_id: The user performing the action, used for logging.
+#     """
+#     try:
+#         # Perform the database query
+#         grade_mapping = {
+#             'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+#             'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
+#         }
+        
+#         cursor = database_operations_instance.cursor
+
+#         cursor.execute("""
+#             SELECT s.major, d.name, sc.grade 
+#             FROM studentcourse sc
+#             JOIN students s ON sc.stud_id = s.stud_id
+#             JOIN departments d ON s.major = d.name
+#         """)
+        
+#         rows = cursor.fetchall()
+
+#         if not rows:
+#             print("No data found.")
+#             return []
+
+#         # Process the data
+#         major_grades = {}
+#         department_grades = {}
+#         for major, department, grade in rows:
+#             if grade in grade_mapping:
+#                 major_grades.setdefault(major, []).append(grade_mapping[grade])
+#                 department_grades.setdefault(department, []).append(grade_mapping[grade])
+
+#         major_results = {}
+#         for major, grades in major_grades.items():
+#             highest_gpa = max(grades)
+#             lowest_gpa = min(grades)
+#             average_gpa = round(sum(grades) / len(grades), 2)
+#             major_results[major] = {
+#                 'Highest GPA': highest_gpa,
+#                 'Lowest GPA': lowest_gpa,
+#                 'Average GPA': average_gpa
+#             }
+
+#         department_results = {}
+#         for department, grades in department_grades.items():
+#             average_gpa = round(sum(grades) / len(grades), 2)
+#             department_results[department] = average_gpa
+
+#         highest_dept = max(department_results, key=department_results.get)
+#         lowest_dept = min(department_results, key=department_results.get)
+
+#         # Logging the operation
+#         log_operation(database_operations_instance, user_id, 'VIEW', new_data={'gpa_stats': major_results, 'department_results': department_results})
+
+#         return {'major_results': major_results, 'department_results': department_results, 'highest_dept': highest_dept, 'lowest_dept': lowest_dept}
+
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         return []
+
+
+# def course_stats(database_operations_instance, user_id):
+#     """
+#     Retrieves course statistics by semester.
+    
+#     Parameters:
+#     - database_operations_instance: An instance of DatabaseOperations class for querying.
+#     - user_id: The user performing the action, used for logging.
+#     """
+#     try:
+#         grade_mapping = {
+#             'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+#             'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
+#         }
+
+#         cursor = database_operations_instance.cursor
+
+#         cursor.execute("""
+#             SELECT sc.course_code, sc.semester, sc.grade
+#             FROM studentcourse sc
+#         """)
+        
+#         rows = cursor.fetchall()
+
+#         if not rows:
+#             print("No data found.")
+#             return []
+
+#         course_stats = {}
+#         for course_code, semester, grade in rows:
+#             course_stats.setdefault((course_code, semester), {'enrollments': 0, 'grades': []})
+#             course_stats[(course_code, semester)]['enrollments'] += 1
+#             if grade in grade_mapping:
+#                 course_stats[(course_code, semester)]['grades'].append(grade_mapping[grade])
+
+#         results = {}
+#         for (course_code, semester), data in course_stats.items():
+#             enrollments = data['enrollments']
+#             average_grade = round(sum(data['grades']) / len(data['grades']), 2) if data['grades'] else 0
+#             results.setdefault(semester, []).append({
+#                 'course_code': course_code,
+#                 'enrollments': enrollments,
+#                 'average_grade': average_grade
+#             })
+
+#         log_operation(database_operations_instance, user_id, 'VIEW', new_data={'course_stats': results})
+
+#         return results
+
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         return []
+
+
+# def instructor_stats(database_operations_instance, user_id):
+#     """
+#     Retrieves student count by major for each instructor and course.
+    
+#     Parameters:
+#     - database_operations_instance: An instance of DatabaseOperations class for querying.
+#     - user_id: The user performing the action, used for logging.
+#     """
+#     try:
+#         cursor = database_operations_instance.cursor
+
+#         cursor.execute("""
+#             SELECT i.instructor_id, c.course_code, c.course_name AS course, s.major AS major, 
+#             COUNT(DISTINCT s.stud_id) AS total_students
+#             FROM instructors i
+#             JOIN instructorcourse ic ON i.instructor_id = ic.instructor_id
+#             JOIN courses c ON ic.course_code = c.course_code  
+#             JOIN studentcourse sc ON ic.course_code = sc.course_code
+#             JOIN students s ON sc.stud_id = s.stud_id
+#             GROUP BY i.instructor_id, c.course_code, s.major, c.course_name, c.dept_id
+#             ORDER BY i.instructor_id, c.course_code, s.major;
+#         """)
+        
+#         rows = cursor.fetchall()
+
+#         if not rows:
+#             print("No data found.")
+#             return []
+
+#         instructor_courses = {}
+#         for row in rows:
+#             instructor_id, course_code, course_name, major_name, total_students = row
+#             if instructor_id not in instructor_courses:
+#                 instructor_courses[instructor_id] = {
+#                     'instructor_id': instructor_id,
+#                     'courses': []
+#                 }
+#             instructor_courses[instructor_id]['courses'].append({
+#                 'course_code': course_code,
+#                 'course_name': course_name,
+#                 'major_name': major_name,
+#                 'total_students': total_students
+#             })
+
+#         log_operation(database_operations_instance, user_id, 'VIEW', new_data={'instructor_courses': instructor_courses})
+
+#         return instructor_courses
+
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         return []
+
+
+
+# def student_stats(database_operations_instance, user_id):
+#     """
+#     Retrieves student statistics by major.
+    
+#     Parameters:
+#     - database_operations_instance: An instance of DatabaseOperations class for querying.
+#     - user_id: The user performing the action, used for logging.
+#     """
+#     try:
+#         cursor = database_operations_instance.cursor
+
+#         cursor.execute("""
+#             SELECT s.major, s.stud_id, s.gender, SUM(sc.credits) AS total_credits
+#             FROM students s
+#             JOIN studentcourse sc ON s.stud_id = sc.stud_id
+#             JOIN courses c ON sc.course_code = c.course_code
+#             GROUP BY s.major, s.stud_id, s.gender
+#             ORDER BY s.major, total_credits DESC;
+#         """)
+        
+#         rows = cursor.fetchall()
+
+#         if not rows:
+#             print("No data found.")
+#             return []
+
+#         major_students = {}
+#         for row in rows:
+#             major, stud_id, gender, total_credits = row
+#             if major not in major_students:
+#                 major_students[major] = {
+#                     'major': major,
+#                     'students': []
+#                 }
+#             major_students[major]['students'].append({
+#                 'stud_id': stud_id,
+#                 'gender': gender,
+#                 'total_credits': total_credits
+#             })
+
+#         log_operation(database_operations_instance, user_id, 'VIEW', new_data={'major_students': major_students})
+
+#         return major_students
+
+#     except Exception as e:
+#         print(f"Error: {e}")
+#         return []
 
 # Test code: Call in main
 
