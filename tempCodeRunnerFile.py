@@ -6,15 +6,6 @@ from psycopg2.extras import RealDictCursor
 import webbrowser
 import time
 
-# from Database_Backend import (
-#     DatabaseOperations, Students, staff_add_course, staff_remove_course, staff_modify_course, 
-#     staff_add_instructor, staff_remove_instructor, staff_modify_instructor,
-#     staff_add_student, staff_remove_student, staff_modify_student,
-#     staff_modify_department, staff_assign_course_to_instructor,
-#     advisor_add_student, advisor_drop_student,
-#     view_student_info, view_student_enrolled_courses, view_instructor_courses,
-#     log_operation, view_log
-# )
 
 from Database_Backend import (
     DatabaseOperations, Students
@@ -129,17 +120,7 @@ def course_summary():
             c.course_code,
             i.instructor_id,
             d.name AS department_name,
-            c.credits,
-            AVG(
-                CASE
-                    WHEN sc.grade = 'A' THEN 4.0
-                    WHEN sc.grade = 'B' THEN 3.0
-                    WHEN sc.grade = 'C' THEN 2.0
-                    WHEN sc.grade = 'D' THEN 1.0
-                    WHEN sc.grade = 'F' THEN 0.0
-                    ELSE NULL
-                END
-            ) AS average_grade
+            c.credits
         FROM Courses c
         JOIN Instructors i ON c.dept_id = i.dept_id
         JOIN Departments d ON c.dept_id = d.dept_id
@@ -1180,150 +1161,78 @@ def drop_student():
 #/////////////////////////////////////////////////////////////////////////////
 # Req 7
 
-# @app.route('/gpa_stats', methods=['GET'])
-# def gpa_stats():
-#     conn = get_db_connection()
-
-#     result = DatabaseOperations.gpa_stats(conn)
-#     return jsonify(result)  # Convert result dictionary to JSON
-
-# @app.route('/gpa_stats_page', methods=['GET'])
-# def gpa_stats_page():
-#     return render_template('gpa_stats.html')  # Render the HTML file
-
-# @app.route('/course_stats', methods=['GET'])
-# def course_stats():
-#     conn = get_db_connection()
-#     result = DatabaseOperations.course_stats(conn)
-#     return jsonify(result)  # Convert result dictionary to JSON
-
-# @app.route('/course_stats_page', methods=['GET'])
-# def course_stats_page():
-#     return render_template('course_stats.html')  # Render the HTML file
-
-# @app.route('/instructor_stats', methods=['GET'])
-# def instructor_stats():
-#     conn = get_db_connection()
-#     result = DatabaseOperations.instructor_stats(conn)
-#     return jsonify(result)  # Convert result dictionary to JSON
-
-# @app.route('/instrcutor_stats_page', methods=['GET'])
-# def instructor_stats_page():
-#     return render_template('instructor_stats.html')  # Render the HTML file
 
 
-# @app.route('/student_stats', methods=['GET'])
-# def student_stats():
-#     conn = get_db_connection()
-#     result = DatabaseOperations.student_stats(conn)
-#     return jsonify(result)  # Convert result dictionary to JSON
-
-# @app.route('/student_stats_page', methods=['GET'])
-# def student_stats_page():
-#     return render_template('student_stats.html')  # Render the HTML file
-
-
-# # GPA Stats Routes
-# @app.route('/gpa_stats', methods=['GET'])
-# def gpa_stats():
-#     conn = get_db_connection()
-#     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-#     result = db_ops.gpa_stats(conn)        # Call the gpa_stats method on the instance
-#     return jsonify(result)              # Convert result dictionary to JSON
-
-# @app.route('/gpa_stats_page', methods=['GET'])
-# def gpa_stats_page():
-#     return render_template('gpa_stats.html')  # Render the HTML file
-
-# # Course Stats Routes
-# @app.route('/course_stats', methods=['GET'])
-# def course_stats():
-#     conn = get_db_connection()
-#     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-#     result = db_ops.course_stats(conn)     # Call the course_stats method on the instance
-#     return jsonify(result)             # Convert result dictionary to JSON
-
-# @app.route('/course_stats_page', methods=['GET'])
-# def course_stats_page():
-#     return render_template('course_stats.html')  # Render the HTML file
-
-# # Instructor Stats Routes
-# @app.route('/instructor_stats', methods=['GET'])
-# def instructor_stats():
-#     conn = get_db_connection()
-#     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-#     result = db_ops.instructor_stats(conn) # Call the instructor_stats method on the instance
-#     return jsonify(result)             # Convert result dictionary to JSON
-
-# @app.route('/instructor_stats_page', methods=['GET'])
-# def instructor_stats_page():
-#     return render_template('instructor_stats.html')  # Render the HTML file
-
-# # Student Stats Routes
-# @app.route('/student_stats', methods=['GET'])
-# def student_stats():
-#     conn = get_db_connection()
-#     db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-#     result = db_ops.student_stats(conn)    # Call the student_stats method on the instance
-#     return jsonify(result)             # Convert result dictionary to JSON
-
-# @app.route('/student_stats_page', methods=['GET'])
-# def student_stats_page():
-#     return render_template('student_stats.html')  # Render the HTML file
-
-
-# GPA Stats Routes
 @app.route('/gpa_stats', methods=['GET'])
 def gpa_stats():
-    conn = get_db_connection()
-    db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-    result = db_ops.gpa_stats(conn)    # Call the gpa_stats method on the instance
-    return render_template('gpa_stats.html', stats=result)  # Render the HTML file with data
+    operations = DatabaseOperations(get_db_connection()) 
 
-@app.route('/gpa_stats_page', methods=['GET'])
-def gpa_stats_page():
-    return render_template('gpa_stats.html')  # Render the HTML file
+    try:
+        # Call the gpa_stats function
+        major_results, department_results, highest_dept, lowest_dept = operations.gpa_stats(conn)
+        
+        # Render the data as plain HTML or send the variables to a template
+        return render_template(
+            'gpa_stats.html',
+            major_results=major_results,
+            department_results=department_results,
+            highest_dept=highest_dept,
+            lowest_dept=lowest_dept
+        )
+    except Exception as e:
+        # Handle unexpected errors
+        return f"An error occurred: {str(e)}", 500
 
-
-# Course Stats Routes
 @app.route('/course_stats', methods=['GET'])
 def course_stats():
-    conn = get_db_connection()
-    db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-    result = db_ops.course_stats(conn) # Call the course_stats method on the instance
-    return render_template('course_stats.html', stats=result)  # Render the HTML file with data
+    
+    operations = DatabaseOperations(get_db_connection()) 
 
-@app.route('/course_stats_page', methods=['GET'])
-def course_stats_page():
-    return render_template('course_stats.html')  # Render the HTML file
+    try:
+        # Call the course_stats function
+        course_data = operations.course_stats(conn)
+
+        if "error" in course_data:
+            return f"Error: {course_data['error']}", 500
+
+        # Render the course data to the HTML template
+        return render_template('course_stats.html', course_data=course_data)
+    except Exception as e:
+        # Handle unexpected errors
+        return f"An error occurred: {str(e)}", 500
 
 
-# Instructor Stats Routes
 @app.route('/instructor_stats', methods=['GET'])
 def instructor_stats():
-    conn = get_db_connection()
-    db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-    result = db_ops.instructor_stats(conn) # Call the instructor_stats method on the instance
-    return render_template('instructor_stats.html', stats=result)  # Render the HTML file with data
+    operations = DatabaseOperations(get_db_connection()) 
 
-@app.route('/instructor_stats_page', methods=['GET'])
-def instructor_stats_page():
-    return render_template('instructor_stats.html')  # Render the HTML file
+    try:
+        instructor_data = operations.instructor_stats(conn)
 
+        if "error" in instructor_data:
+            return f"Error: {instructor_data['error']}", 500
 
-# Student Stats Routes
+        # Render the course data to the HTML template
+        return render_template('instructor_stats.html', instructor_data=instructor_data)
+    except Exception as e:
+        # Handle unexpected errors
+        return f"An error occurred: {str(e)}", 500
+    
 @app.route('/student_stats', methods=['GET'])
 def student_stats():
-    conn = get_db_connection()
-    db_ops = DatabaseOperations(conn)  # Create an instance of DatabaseOperations
-    result = db_ops.student_stats(conn) # Call the student_stats method on the instance
-    return render_template('student_stats.html', stats=result)  # Render the HTML file with data
+    operations = DatabaseOperations(get_db_connection()) 
 
-@app.route('/student_stats_page', methods=['GET'])
-def student_stats_page():
-    return render_template('student_stats.html')  # Render the HTML file
+    try:
+        student_data = operations.student_stats(conn)
 
+        if "error" in student_data:
+            return f"Error: {student_data['error']}", 500
 
+        # Render the course data to the HTML template
+        return render_template('student_stats.html', student_data=student_data)
+    except Exception as e:
+        # Handle unexpected errors
+        return f"An error occurred: {str(e)}", 500
 
 # #Function to open all routes in the default web browser when the app starts
 # def visit_all_routes():

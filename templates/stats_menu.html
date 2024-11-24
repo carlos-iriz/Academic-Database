@@ -6,40 +6,56 @@
     <title>Statistics Dashboard</title>
     <!-- Link to Bootstrap CSS -->
     <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 500px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        .btn-custom {
+            width: 100%;
+            font-size: 1.1em;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        .header-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #343a40;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="container text-center">
+            <div class="header-title">Statistics Dashboard</div>
+            <p class="text-muted mb-4">Select an option below:</p>
 
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">Statistics Dashboard</h1>
-        
-        <div class="row justify-content-center">
-            <!-- Button to view Student Stats -->
-            <div class="col-md-3 mb-3">
-                <a href="{{ url_for('student_stats') }}" class="btn btn-primary btn-block">Student Stats</a>
+            <div class="form-group">
+                <a href="{{ url_for('student_stats') }}" class="btn btn-primary btn-custom">Student Stats</a>
             </div>
-            
-            <!-- Button to view Instructor Stats -->
-            <div class="col-md-3 mb-3">
-                <a href="{{ url_for('instructor_stats') }}" class="btn btn-success btn-block">Instructor Stats</a>
+            <div class="form-group">
+                <a href="{{ url_for('instructor_stats') }}" class="btn btn-success btn-custom">Instructor Stats</a>
             </div>
-            
-            <!-- Button to view GPA Stats -->
-            <div class="col-md-3 mb-3">
-                <a href="{{ url_for('gpa_stats') }}" class="btn btn-warning btn-block">GPA Stats</a>
+            <div class="form-group">
+                <a href="{{ url_for('gpa_stats') }}" class="btn btn-warning btn-custom">GPA Stats</a>
             </div>
-            
-            <!-- Button to view Course Stats -->
-            <div class="col-md-3 mb-3">
-                <a href="{{ url_for('course_stats') }}" class="btn btn-info btn-block">Course Stats</a>
+            <div class="form-group">
+                <a href="{{ url_for('course_stats') }}" class="btn btn-info btn-custom">Course Stats</a>
             </div>
         </div>
-
     </div>
 
     <!-- Link to Bootstrap JS and dependencies (Popper.js and jQuery) -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    
 </body>
 </html>

@@ -4,23 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Course Statistics</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
+    <div class="container my-4">
+        <h1 class="text-center mb-4">Course Statistics by Semester</h1>
 
-<h1>Course Statistics</h1>
-
-{% if stats %}
-    {% for course, details in stats.items() %}
-        <h2>{{ course }}</h2>
-        <ul>
-            {% for key, value in details.items() %}
-                <li><strong>{{ key }}:</strong> {{ value }}</li>
-            {% endfor %}
-        </ul>
-    {% endfor %}
-{% else %}
-    <p>No course statistics available.</p>
-{% endif %}
-
+        {% for semester, courses in course_data.items() %}
+            <div class="card my-3">
+                <div class="card-header bg-primary text-white">
+                    <h2 class="h5 mb-0">Semester: {{ semester }}</h2>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Course Code</th>
+                                <th>Enrollments</th>
+                                <th>Average Grade</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for course in courses %}
+                                <tr>
+                                    <td>{{ course.course_code }}</td>
+                                    <td>{{ course.enrollments }}</td>
+                                    <td>{{ course.average_grade }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
 </body>
 </html>

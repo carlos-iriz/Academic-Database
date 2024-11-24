@@ -1,43 +1,84 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GPA Statistics</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
-    <h1>GPA Statistics</h1>
+    <div class="container my-4">
+        <h1 class="text-center mb-4">GPA Statistics</h1>
 
-    <h2>Major Results</h2>
-    <ul>
-        {% for result in major_results %}
-        <li>
-            Major: {{ result.major }}<br>
-            Highest GPA: {{ result.highest_gpa }}<br>
-            Lowest GPA: {{ result.lowest_gpa }}<br>
-            Average GPA: {{ result.average_gpa }}
-        </li>
-        {% endfor %}
-    </ul>
+        <!-- Major GPA Statistics -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h5 mb-0">Major GPA Statistics</h2>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Major</th>
+                            <th>Highest GPA</th>
+                            <th>Lowest GPA</th>
+                            <th>Average GPA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in major_results %}
+                            <tr>
+                                <td>{{ result.major }}</td>
+                                <td>{{ result.highest_gpa }}</td>
+                                <td>{{ result.lowest_gpa }}</td>
+                                <td>{{ result.average_gpa }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <h2>Department Results</h2>
-    <ul>
-        {% for dept in department_results %}
-        <li>
-            Department: {{ dept.department }}<br>
-            Average GPA: {{ dept.average_gpa }}
-        </li>
-        {% endfor %}
-    </ul>
+        <!-- Department GPA Statistics -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h2 class="h5 mb-0">Department GPA Statistics</h2>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-striped table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Department</th>
+                            <th>Average GPA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for result in department_results %}
+                            <tr>
+                                <td>{{ result.department }}</td>
+                                <td>{{ result.average_gpa }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 
-    <h2>Highest Department</h2>
-    <p>
-        Department: {{ highest_dept.department }}<br>
-        Average GPA: {{ highest_dept.average_gpa }}
-    </p>
-
-    <h2>Lowest Department</h2>
-    <p>
-        Department: {{ lowest_dept.department }}<br>
-        Average GPA: {{ lowest_dept.average_gpa }}
-    </p>
+        <!-- Highest and Lowest GPA Departments -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="alert alert-success">
+                    <h5>Highest GPA Department: {{ highest_dept.department }}</h5>
+                    <p>Average GPA: {{ highest_dept.average_gpa }}</p>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="alert alert-danger">
+                    <h5>Lowest GPA Department: {{ lowest_dept.department }}</h5>
+                    <p>Average GPA: {{ lowest_dept.average_gpa }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
