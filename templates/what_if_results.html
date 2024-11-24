@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPA Calculation Result</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+
+    <div class="container mt-5">
+        <h1 class="text-center mb-4">What-If GPA Analysis Result</h1>
+
+        <!-- Result Card -->
+        <div class="card shadow-lg p-4">
+            <p class="text-center lead">Your calculated GPA is:</p>
+            <h2 class="text-center text-primary">{{ results }}</h2>
+
+            <div class="d-flex justify-content-center mt-4">
+                <a href="{{ url_for('what_if_analysis') }}" class="btn btn-secondary">Go Back and Try Again</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.1/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

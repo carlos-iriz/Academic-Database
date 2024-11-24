@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instructor Statistics</title>
+</head>
+<body>
+
+<h1>Instructor Statistics</h1>
+
+{% if stats %}
+    {% for instructor, details in stats.items() %}
+        <h2>{{ instructor }}</h2>
+        <ul>
+            {% for key, value in details.items() %}
+                <li><strong>{{ key }}:</strong> {{ value }}</li>
+            {% endfor %}
+        </ul>
+    {% endfor %}
+{% else %}
+    <p>No instructor statistics available.</p>
+{% endif %}
+
+</body>
+</html>

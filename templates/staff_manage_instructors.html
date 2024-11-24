@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4 text-center">Manage Instructors</h1>
+    
+    <!-- Add Instructor Form -->
+    <div class="card mb-4">
+        <div class="card-header">Add Instructor</div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="action" value="add">
+                <div class="col-md-4">
+                    <label for="instructor_id" class="form-label">Instructor ID</label>
+                    <input type="number" id="instructor_id" name="instructor_id" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="hired_sem" class="form-label">Hired Semester</label>
+                    <input type="text" id="hired_sem" name="hired_sem" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="instructor_phone" class="form-label">Phone</label>
+                    <input type="text" id="instructor_phone" name="instructor_phone" class="form-control" required>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">Add Instructor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Remove Instructor Form -->
+    <div class="card mb-4">
+        <div class="card-header">Remove Instructor</div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="action" value="remove">
+                <div class="col-md-6">
+                    <label for="instructor_id_remove" class="form-label">Instructor ID</label>
+                    <select id="instructor_id_remove" name="instructor_id" class="form-select" required>
+                        <option selected disabled>Choose an instructor...</option>
+                        {% for instructor in instructors %}
+                        <option value="{{ instructor.instructor_id }}">{{ instructor.username }} - {{ instructor.email }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-danger">Remove Instructor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modify Instructor Form -->
+    <div class="card mb-4">
+        <div class="card-header">Modify Instructor</div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="action" value="modify">
+                <div class="col-md-4">
+                    <label for="instructor_id_modify" class="form-label">Instructor ID</label>
+                    <select id="instructor_id_modify" name="instructor_id" class="form-select" required>
+                        <option selected disabled>Choose an instructor...</option>
+                        {% for instructor in instructors %}
+                        <option value="{{ instructor.instructor_id }}">{{ instructor.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="attribute" class="form-label">Attribute</label>
+                    <select id="attribute" name="attribute" class="form-select" required>
+                        <option value="hired_sem">Hired Semester</option>
+                        <option value="instructor_phone">Phone</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="modification" class="form-label">New Value</label>
+                    <input type="text" id="modification" name="modification" class="form-control" required>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-warning">Modify Instructor</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Instructors Table -->
+    <div class="card">
+        <div class="card-header">Instructors List</div>
+        <div class="card-body">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Instructor ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Hired Semester</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for instructor in instructors %}
+                    <tr>
+                        <td>{{ instructor.instructor_id }}</td>
+                        <td>{{ instructor.username }}</td>
+                        <td>{{ instructor.email }}</td>
+                        <td>{{ instructor.instructor_phone }}</td>
+                        <td>{{ instructor.hired_sem }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
