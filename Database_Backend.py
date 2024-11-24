@@ -407,7 +407,7 @@ class DatabaseOperations:
 
     #/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    def view_entry(self, table, condition):
+    def view_entry(self, table, condition = None):
         condition_clause = ' AND '.join([f"{k} = %s" for k in condition.keys()])
         query = f"SELECT * FROM {table} WHERE {condition_clause}"
         values = tuple(condition.values())

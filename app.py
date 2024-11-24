@@ -5,6 +5,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import webbrowser
 import time
+from datetime import datetime
 
 from Database_Backend import *
 
@@ -132,6 +133,28 @@ def course_summary():
     # Fetch all results
     courses = cursor.fetchall()
 
+    query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+    cursor.execute(query2)
+    entry = cursor.fetchone()[0] + 1
+
+    # log the view
+    log_data = {
+        'entry': entry,
+        'timestamp': datetime.now(),  # Current timestamp
+        'user_id': session['username'], # User performing the operation
+        'operationtype': "VIEW", # Type of operation
+        'old_data': "Course Viewing",
+        'new_data': None # New data (if any)
+    }
+
+    db_ops = DatabaseOperations(conn)
+
+    db_ops.add_entry("Log", log_data)
+
     # Close the database connection
     cursor.close()
     conn.close()
@@ -170,10 +193,13 @@ def department_summary():
     try:
         # Fetch the department ID for the logged-in user based on their role
         if user_role == 'Instructor':
+            table = "Instructors"
             cursor.execute("SELECT dept_id FROM Instructors WHERE instructor_id = %s", (user_id,))
         elif user_role == 'Advisor':
+            table = "Advisors"
             cursor.execute("SELECT dept_id FROM Advisors WHERE adv_id = %s", (user_id,))
         elif user_role == 'Staff':
+            table = "Staff"
             cursor.execute("SELECT dept_id FROM Staff WHERE staff_id = %s", (user_id,))
         else:
             return redirect(url_for('login'))  # Unauthorized role access
@@ -201,6 +227,28 @@ def department_summary():
         print(f"Error fetching department summary: {e}")
         department_summary_data = []
     finally:
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': table + " Department Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
+
         cursor.close()
         conn.close()
 
@@ -341,6 +389,30 @@ def instructor_summary():
     except Exception as e:
         print(f"Error fetching instructors: {e}")
     finally:
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': "Instructor Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
+
+        
+
         cursor.close()
         conn.close()
 
@@ -356,42 +428,44 @@ def instructor_summary():
 #     return render_template('log.html')  # Assuming you have a log template
 
 # Log operation (to be called after any INSERT, UPDATE, DELETE operation)
-def log_operation(user_id, operation_type, affected_table, old_data=None, new_data=None):
-    # Connect to the database
-    conn = get_db_connection()
-    cursor = conn.cursor()
+# def log_operation(user_id, operation_type, affected_table, old_data=None, new_data=None):
+#     # Connect to the database
+#     conn = get_db_connection()
+#     cursor = conn.cursor()
 
-    # Prepare the log entry
-    try:
-        cursor.execute("""
-            INSERT INTO Log (user_id, operationtype, old_data, new_data)
-            VALUES (%s, %s, %s, %s)
-        """, (
-            user_id, 
-            operation_type, 
-            json.dumps(old_data, default=str) if old_data else None,  # Store old data as JSON string
-            json.dumps(new_data, default=str) if new_data else None   # Store new data as JSON string
-        ))
+#     # Prepare the log entry
+#     try:
+#         cursor.execute("""
+#             INSERT INTO Log (user_id, operationtype, old_data, new_data)
+#             VALUES (%s, %s, %s, %s)
+#         """, (
+#             user_id, 
+#             operation_type, 
+#             json.dumps(old_data, default=str) if old_data else None,  # Store old data as JSON string
+#             json.dumps(new_data, default=str) if new_data else None   # Store new data as JSON string
+#         ))
 
-        # Commit the transaction
-        conn.commit()
+#         # Commit the transaction
+#         conn.commit()
 
-    except Exception as e:
-        print(f"Error logging operation: {e}")
-    finally:
-        cursor.close()
-        conn.close()
+#     except Exception as e:
+#         print(f"Error logging operation: {e}")
+#     finally:
+#         cursor.close()
+#         conn.close()
 
-# Example usage of the log function:
+# # Example usage of the log function:
+# def log_reading(user_id, table):
+#     log_operation(user_id, "READ", table)
 
-def log_addition(user_id, table, new_data):
-    log_operation(user_id, "INSERT", table, new_data=new_data)
+# def log_addition(user_id, table, new_data):
+#     log_operation(user_id, "INSERT", table, new_data=new_data)
 
-def log_modification(user_id, table, old_data, new_data):
-    log_operation(user_id, "UPDATE", table, old_data=old_data, new_data=new_data)
+# def log_modification(user_id, table, old_data, new_data):
+#     log_operation(user_id, "UPDATE", table, old_data=old_data, new_data=new_data)
 
-def log_deletion(user_id, table, old_data):
-    log_operation(user_id, "DELETE", table, old_data=old_data)
+# def log_deletion(user_id, table, old_data):
+#     log_operation(user_id, "DELETE", table, old_data=old_data)
 
 # Logout Route
 @app.route('/logout')
@@ -468,6 +542,29 @@ def my_courses():
         print(f"Error fetching courses: {e}")
         return "An error occurred while fetching courses.", 500
     finally:
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': "Course Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
+
+
         cursor.close()
         conn.close()
 
@@ -556,6 +653,29 @@ def my_grades():
     except Exception as e:
         print(f"Error fetching grades: {e}")
     finally:
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': "Course Grade Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
+
+
         cursor.close()
         conn.close()
 
@@ -595,6 +715,29 @@ def my_info():
         print(f"Error: {e}")
         return "An error occurred.", 500
     finally:
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': "User Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
+
+
         cursor.close()
         conn.close()
 
@@ -665,6 +808,28 @@ def student_info():
                 student_info = None  # Ensure no data is shown if there's an error
 
             finally:
+                query2 = """
+                    SELECT COUNT(*)
+                    FROM Log
+                """
+                cursor.execute(query2)
+                entry = cursor.fetchone()[0] + 1
+
+                # log the view
+                log_data = {
+                    'entry': entry,
+                    'timestamp': datetime.now(),  # Current timestamp
+                    'user_id': session['username'], # User performing the operation
+                    'operationtype': "VIEW", # Type of operation
+                    'old_data': "Student Info Viewing",
+                    'new_data': None # New data (if any)
+                }
+
+                db_ops = DatabaseOperations(conn)
+
+                db_ops.add_entry("Log", log_data)
+
+
                 cursor.close()
                 conn.close()
                 
@@ -736,6 +901,29 @@ def student_summary():
         print(f"Error fetching student summary: {e}")
         student_summary_data = []
     finally:
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': "Student Summary Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
+
+
         cursor.close()
         conn.close()
 
@@ -866,6 +1054,28 @@ def what_if_analysis():
     result = cursor.fetchone()
     currCredits = result[0]
 
+    query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+    cursor.execute(query2)
+    entry = cursor.fetchone()[0] + 1
+
+    # log the view
+    log_data = {
+        'entry': entry,
+        'timestamp': datetime.now(),  # Current timestamp
+        'user_id': session['username'], # User performing the operation
+        'operationtype': "VIEW", # Type of operation
+        'old_data': "Grade Viewing",
+        'new_data': None # New data (if any)
+    }
+
+    db_ops = DatabaseOperations(conn)
+
+    db_ops.add_entry("Log", log_data)
+
     cursor.close()
     conn.close()
 
@@ -956,6 +1166,29 @@ def what_if_analysis_advisor():
         cursor.execute(query, (id,))
         result = cursor.fetchone()
         currCredits = result[0]
+
+        query2 = """
+        SELECT COUNT(*)
+        FROM Log
+    """
+
+        cursor.execute(query2)
+        entry = cursor.fetchone()[0] + 1
+
+        # log the view
+        log_data = {
+            'entry': entry,
+            'timestamp': datetime.now(),  # Current timestamp
+            'user_id': session['username'], # User performing the operation
+            'operationtype': "VIEW", # Type of operation
+            'old_data': "Grade Viewing",
+            'new_data': None # New data (if any)
+        }
+
+        db_ops = DatabaseOperations(conn)
+
+        db_ops.add_entry("Log", log_data)
+
 
         cursor.close()
         conn.close()
