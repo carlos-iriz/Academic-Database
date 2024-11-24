@@ -10,21 +10,24 @@
 <body>
 
     <div class="container mt-5">
-        <h1 class="text-center mb-4">What-If GPA Analysis Result Student</h1>
+        <h1 class="text-center mb-4">What-If GPA Analysis Result Advisor</h1>
 
         <!-- Result Card -->
         <div class="card shadow-lg p-4">
-            <p class="text-center lead">Your previous GPA was:</p>
+            <p class="text-center lead">Student's ID:</p>
+            <h2 class="text-center text-primary">{{ s_id }}</h2>
+
+            <p class="text-center lead">Previous GPA was:</p>
             <h2 class="text-center text-primary">{{ prev_gpa }}</h2>
 
-            <p class="text-center lead">Your calculated GPA is:</p>
+            <p class="text-center lead">Calculated GPA is:</p>
             <h2 class="text-center text-primary">{{ results }}</h2>
 
         </div>
 
         <!-- Button to return to the previous page -->
         <div class="text-center mt-4">
-            <button onclick="window.location.href='/what_if_analysis'" class="btn btn-primary">Go Back?</button>
+            <button onclick="window.location.href='/what_if_analysis_advisor'" class="btn btn-primary">Go Back?</button>
         </div>
 
     </div>
