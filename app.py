@@ -11,6 +11,8 @@ from Database_Backend import (
     DatabaseOperations, Students
 )
 
+
+
 import secrets
 
 
@@ -1158,112 +1160,284 @@ def user_info():
 
 
 
-@app.route('/staff_add_drop_modify', methods=['GET'])
+#/////////////////////////////////////////////////////////////////////////////
+# Req 1
+
+@app.route('/staff_add_drop_modify')
 def staff_add_drop_modify():
-    return render_template('staff_add_drop_modify.html')
+    return render_template('staff_add_drop_modify.html')  # Replace with the correct HTML template
 
-@app.route('/process_staff_action', methods=['POST'])
-def process_staff_action():
-    action = request.form.get('action')
-    attribute = request.form.get('attribute')
-    modification = request.form.get('modification')
-    course_code = request.form.get('course_code')
-    instructor_id = request.form.get('instructor_id')
-    student_id = request.form.get('student_id')
-    #staff_id = username
-    staff_id = session['username'] = user_info[0]
+@app.route('/staff_manage_courses', methods=['GET', 'POST'])
+def staff_manage_courses():
+    database_operations_instance = DatabaseOperations()
+
+    if request.method == 'GET':
+        return render_template('staff_manage_courses.html')  # Replace with your courses page template
+    
+    if request.method == 'POST':
+        action = request.form.get('action')  # Determine the action: 'add', 'remove', or 'modify'
+        staff_id = request.form.get('staff_id')  # Assuming staff_id is submitted in the form
+        
+        if action == 'add':
+            # Retrieve form data for adding a course
+            course_code = request.form.get('course_code')
+            course_name = request.form.get('course_name')
+            credits = request.form.get('credits')
+            
+            staff_add_course(database_operations_instance, course_code, course_name, credits, staff_id)
+            print('Course added successfully!', 'success')
+        
+        elif action == 'remove':
+            # Retrieve form data for removing a course
+            course_code = request.form.get('course_code')
+            
+            staff_remove_course(database_operations_instance, course_code, staff_id)
+            print('Course removed successfully!', 'success')
+        
+        elif action == 'modify':
+            # Retrieve form data for modifying a course
+            attribute = request.form.get('attribute')  # Example: 'course_name', 'credits'
+            modification = request.form.get('modification')  # New value for the attribute
+            course_code = request.form.get('course_code')
+            
+            staff_modify_course(database_operations_instance, attribute, modification, course_code, staff_id)
+            print('Course modified successfully!', 'success')
+        
+        return redirect(url_for('staff_manage_courses'))
 
 
-    # Instance of your database_operations class
-    conn = get_db_connection()
+@app.route('/staff_modify_departments', methods=['GET', 'POST'])
+def staff_modify_departments():
+    database_operations_instance = DatabaseOperations()
+    if request.method == 'GET':
+        # Fetch department data to display in the dropdown and table
+        departments = database_operations_instance.get_all_entries('Departments')  # Fetch all departments
+        return render_template('staff_modify_departments.html', departments=departments)
+    
+    if request.method == 'POST':
+        action = request.form.get('action')
+        staff_id = request.form.get('staff_id')  # Assuming staff_id is submitted in the form
 
-    db_ops = DatabaseOperations(conn)
+        if action == 'modify':
+            # Retrieve form data for modifying a department
+            dept_id = request.form.get('dept_id')
+            attribute = request.form.get('attribute')  # Example: 'name'
+            modification = request.form.get('modification')  # New value for the attribute
+            
+            staff_modify_department(database_operations_instance, attribute, modification, dept_id, staff_id)
+            print('Department modified successfully!', 'success')
+        
+        return redirect(url_for('staff_modify_departments'))
 
-    if action == 'add_course':
-        DatabaseOperations.staff_add_course(db_ops, course_code, request.form.get('course_name'), request.form.get('credits'), staff_id)
-    elif action == 'remove_course':
-         DatabaseOperations.staff_remove_course(db_ops, course_code, staff_id)
-    elif action == 'modify_course':
-         DatabaseOperations.staff_modify_course(db_ops, attribute, modification, course_code, staff_id)
-    elif action == 'add_instructor':
-        DatabaseOperations.staff_add_instructor(db_ops, instructor_id, request.form.get('username'), request.form.get('email'),
-                             request.form.get('password'), request.form.get('hired_sem'),
-                             request.form.get('instructor_phone'), staff_id)
-    elif action == 'remove_instructor':
-         DatabaseOperations.staff_remove_instructor(db_ops, instructor_id, staff_id)
-    elif action == 'modify_instructor':
-         DatabaseOperations.staff_modify_instructor(db_ops, attribute, modification, instructor_id, staff_id)
-    elif action == 'add_student':
-         DatabaseOperations.staff_add_student(db_ops, student_id, request.form.get('username'), request.form.get('email'),
-                          request.form.get('password'), request.form.get('gender'),
-                          request.form.get('major'), request.form.get('dept_id'), staff_id)
-    elif action == 'remove_student':
-        DatabaseOperations.staff_remove_student(db_ops, student_id, staff_id)
-    elif action == 'modify_student':
-        DatabaseOperations.staff_modify_student(db_ops, attribute, modification, student_id, staff_id)
-    elif action == 'modify_department':
-        DatabaseOperations.staff_modify_department(db_ops, attribute, modification, request.form.get('dept_id'), staff_id)
-    elif action == 'assign_course':
-        DatabaseOperations.staff_assign_course_to_instructor(db_ops, instructor_id, request.form.get('course_id'), staff_id)
-    else:
-        return "Invalid action", 400
+# Route to manage instructors
+@app.route('/staff_modify_instructors', methods=['GET', 'POST'])
+def staff_modify_instructors():
+    try:
+        # Simulated database instance
+        db = DatabaseOperations()
+        
+        # Simulated logged-in staff ID (Replace this with your session's user ID logic)
+        staff_id = username
 
-    return redirect(url_for('staff_add_drop_modify'))
+        # If POST request is received, handle form actions
+        if request.method == 'POST':
+            action = request.form.get('action')
+            
+            if action == 'add':
+                # Extract form data
+                instructor_id = request.form.get('instructor_id', type=int)
+                username = request.form.get('username')
+                email = request.form.get('email')
+                password = request.form.get('password')
+                hired_sem = request.form.get('hired_sem')
+                instructor_phone = request.form.get('instructor_phone')
+                
+                # Call function to add instructor
+                staff_add_instructor(
+                    db, 
+                    instructor_id, username, email, password, 
+                    hired_sem, instructor_phone, staff_id
+                )
+                print("Instructor added successfully!", "success")
+            
+            elif action == 'remove':
+                # Extract form data
+                instructor_id = request.form.get('instructor_id', type=int)
+                
+                # Call function to remove instructor
+                staff_remove_instructor(db, instructor_id, staff_id)
+                print("Instructor removed successfully!", "success")
+            
+            elif action == 'modify':
+                # Extract form data
+                instructor_id = request.form.get('instructor_id', type=int)
+                attribute = request.form.get('attribute')
+                modification = request.form.get('modification')
+                
+                # Call function to modify instructor
+                staff_modify_instructor(
+                    db, 
+                    attribute, modification, instructor_id, staff_id
+                )
+                print("Instructor modified successfully!", "success")
+            
+            return redirect(url_for('staff_modify_instructors'))
+
+        # For GET request, fetch instructors data to render on the page
+        instructors = db.fetch_all('Instructors')  # Adjust to match your database method
+        
+        return render_template(
+            'staff_modify_instructors.html', 
+            instructors=instructors
+        )
+    
+    except Exception as e:
+        print(f"An error occurred: {e}", "danger")
+        return redirect(url_for('staff_add_drop_modify'))
+
+# Route to manage students
+@app.route('/staff_modify_students', methods=['GET', 'POST'])
+def staff_modify_students():
+    try:
+        # Simulated database instance
+        db = DatabaseOperations()
+        
+        # Simulated logged-in staff ID (Replace with your session's user ID logic)
+        staff_id = 1234
+
+        # Handle form submission
+        if request.method == 'POST':
+            action = request.form.get('action')
+            
+            if action == 'add':
+                # Extract form data
+                user_id = request.form.get('user_id', type=int)
+                username = request.form.get('username')
+                email = request.form.get('email')
+                password = request.form.get('password')
+                gender = request.form.get('gender')
+                major = request.form.get('major')
+                dept_id = request.form.get('dept_id', type=int)
+                
+                # Call function to add student
+                staff_add_student(
+                    db,
+                    user_id, username, email, password,
+                    gender, major, dept_id, staff_id
+                )
+                print("Student added successfully!", "success")
+            
+            elif action == 'remove':
+                # Extract form data
+                stud_id = request.form.get('stud_id', type=int)
+                
+                # Call function to remove student
+                staff_remove_student(db, stud_id, staff_id)
+                print("Student removed successfully!", "success")
+            
+            elif action == 'modify':
+                # Extract form data
+                stud_id = request.form.get('stud_id', type=int)
+                attribute = request.form.get('attribute')
+                modification = request.form.get('modification')
+                
+                # Call function to modify student
+                staff_modify_student(
+                    db,
+                    attribute, modification, stud_id, staff_id
+                )
+                print("Student modified successfully!", "success")
+            
+            return redirect(url_for('staff_modify_students'))
+
+        # For GET request, fetch students data to render on the page
+        students = db.fetch_all('Students')  # Adjust to match your database method
+        
+        return render_template(
+            'staff_modify_students.html', 
+            students=students
+        )
+    
+    except Exception as e:
+        print(f"An error occurred: {e}", "danger")
+        return redirect(url_for('staff_modify_students'))
 
 #/////////////////////////////////////////////////////////////////////////////
 # Req 2
 @app.route('/advisor_add_drop', methods=['GET'])
 def advisor_add_drop():
-    return render_template('advisor_add_drop.html')
+    conn = get_db_connection()
+    operations = DatabaseOperations(conn)
+
+    # Retrieve the advisor's department using the global `username`
+    advisor_id = username  # Assume `username` is the global variable holding the advisor's user ID
+    advisor_query = "SELECT dept_id FROM Advisors WHERE adv_id = %s"
+    advisor_dept = conn.execute(advisor_query, (advisor_id,)).fetchone()['dept_id']
+
+    # Get students and courses in the advisor's department
+    student_query = "SELECT stud_id, (SELECT username FROM UserInfo WHERE user_id = stud_id) AS name FROM Students WHERE dept_id = %s"
+    course_query = "SELECT course_code, course_name FROM Courses WHERE dept_id = %s"
+    students = conn.execute(student_query, (advisor_dept,)).fetchall()
+    courses = conn.execute(course_query, (advisor_dept,)).fetchall()
+
+    return render_template('advisor_add_drop.html', students=students, courses=courses)
+
 
 @app.route('/add_student', methods=['POST'])
 def add_student():
     conn = get_db_connection()
     operations = DatabaseOperations(conn)
     try:
-        # Get form data
         student_id = request.form['student_id']
         course_code = request.form['course_code']
         semester = request.form['semester']
         year_taken = int(request.form['year_taken'])
         grade = request.form['grade']
-        #advisor_id = username
-        advisor_id = session['username'] = user_info[0]
+        advisor_id = username
 
-        
-        # Call your function
         operations.advisor_add_student(student_id, course_code, semester, year_taken, grade, advisor_id)
-        print('Added to Course')
-        # Flash success message if needed
     except Exception as e:
         print(f'Error: {str(e)}')
-        # Flash error message if needed
-    
+
     return redirect('/advisor_add_drop')
+
 
 @app.route('/drop_student', methods=['POST'])
 def drop_student():
     conn = get_db_connection()
     operations = DatabaseOperations(conn)
     try:
-        # Get form data
         student_id = request.form['student_id']
         course_code = request.form['course_code']
         semester = request.form['semester']
         year_taken = int(request.form['year_taken'])
-        #advisor_id = username
-        advisor_id = session['username'] = user_info[0]
+        advisor_id = username
 
-        
-        # Call your function
         operations.advisor_drop_student(student_id, course_code, semester, year_taken, advisor_id)
-        print('Dropped from Course')
-        # Flash success message if needed
     except Exception as e:
         print(f'Error: {str(e)}')
-        # Flash error message if needed
-    
+
     return redirect('/advisor_add_drop')
+
+
+@app.route('/get_student_courses', methods=['POST'])
+def get_student_courses():
+    conn = get_db_connection()
+    student_id = request.form['student_id']
+
+    # Fetch courses the student is registered for
+    query = """
+        SELECT sc.course_code, c.course_name
+        FROM StudentCourse sc
+        JOIN Courses c ON sc.course_code = c.course_code
+        WHERE sc.stud_id = %s
+    """
+    student_courses = conn.execute(query, (student_id,)).fetchall()
+
+    return student_courses
+
+
+#/////////////////////////////////////////////////////////////////////////////
 
 #/////////////////////////////////////////////////////////////////////////////
 # Req 3
