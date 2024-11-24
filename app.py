@@ -894,12 +894,25 @@ def student_summary():
             WHERE s.dept_id = %s
             ORDER BY s.stud_id
         """
+
         cursor.execute(query, (dept_id,))
         student_summary_data = cursor.fetchall()
+<<<<<<< Updated upstream
+=======
+
+        new_student_summary_data = []
+        for student in student_summary_data:
+            stud_gpa = Students(conn, student[0]).calculate_gpa(conn)
+            student = student + (stud_gpa,)
+            new_student_summary_data.append(student)
+
+
+        print(f"Fetched students: {new_student_summary_data}")
+>>>>>>> Stashed changes
 
     except Exception as e:
         print(f"Error fetching student summary: {e}")
-        student_summary_data = []
+        new_student_summary_data = []
     finally:
         query2 = """
         SELECT COUNT(*)
@@ -928,7 +941,7 @@ def student_summary():
         conn.close()
 
     # Render the template with student summary data
-    return render_template('student_summary.html', student_summary=student_summary_data)
+    return render_template('student_summary.html', student_summary=new_student_summary_data)
 
 # @app.route('/student_summary')
 # def student_summary():
