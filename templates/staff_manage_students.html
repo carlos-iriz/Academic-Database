@@ -1,0 +1,108 @@
+
+{% block content %}
+<div class="container py-4">
+    <h1 class="mb-4 text-center">Manage Students</h1>
+    
+    <!-- Add Student Form -->
+    <div class="card mb-4">
+        <div class="card-header">Add Student</div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="action" value="add">
+                <div class="col-md-4">
+                    <label for="user_id" class="form-label">Student ID</label>
+                    <input type="number" id="user_id" name="user_id" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" id="username" name="username" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" id="email" name="email" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" name="password" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="gender" class="form-label">Gender</label>
+                    <select id="gender" name="gender" class="form-select" required>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="major" class="form-label">Major</label>
+                    <input type="text" id="major" name="major" class="form-control" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="dept_id" class="form-label">Department ID</label>
+                    <input type="number" id="dept_id" name="dept_id" class="form-control" required>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-primary">Add Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Remove Student Form -->
+    <div class="card mb-4">
+        <div class="card-header">Remove Student</div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="action" value="remove">
+                <div class="col-md-6">
+                    <label for="stud_id" class="form-label">Student ID</label>
+                    <select id="stud_id" name="stud_id" class="form-select" required>
+                        <option selected disabled>Choose a student...</option>
+                        {% for student in students %}
+                        <option value="{{ student.user_id }}">{{ student.user_id }} - {{ student.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-danger">Remove Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modify Student Form -->
+    <div class="card mb-4">
+        <div class="card-header">Modify Student</div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="action" value="modify">
+                <div class="col-md-4">
+                    <label for="stud_id_modify" class="form-label">Student ID</label>
+                    <select id="stud_id_modify" name="stud_id" class="form-select" required>
+                        <option selected disabled>Choose a student...</option>
+                        {% for student in students %}
+                        <option value="{{ student.user_id }}">{{ student.user_id }} - {{ student.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="attribute" class="form-label">Attribute</label>
+                    <select id="attribute" name="attribute" class="form-select" required>
+                        <option value="username">Username</option>
+                        <option value="email">Email</option>
+                        <option value="major">Major</option>
+                        <option value="gender">Gender</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="modification" class="form-label">New Value</label>
+                    <input type="text" id="modification" name="modification" class="form-control" required>
+                </div>
+                <div class="col-12 text-end">
+                    <button type="submit" class="btn btn-warning">Modify Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

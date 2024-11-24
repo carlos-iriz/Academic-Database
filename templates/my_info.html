@@ -41,6 +41,13 @@
                 <p><strong>Username:</strong> {{ user_info[1] }}</p>
                 <p><strong>Email:</strong> {{ user_info[2] }}</p>
                 <p><strong>Role:</strong> {{ user_info[3] }}</p>
+                
+                <!-- GPA Display (Only for students) -->
+                {% if gpa is not none and user_info[3] == 'Student' %}
+                <p><strong>GPA:</strong> {{ gpa }}</p>
+                {% else %}
+                <p><strong>GPA:</strong> Not available</p>
+                {% endif %}
                 {% else %}
                 <p class="text-danger">No user information available.</p>
                 {% endif %}

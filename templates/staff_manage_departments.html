@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Departments</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container mt-5">
+        <h2>Manage Departments</h2>
+        
+        <!-- Form to Modify Department Details -->
+        <form method="POST" action="{{ url_for('staff_manage_departments') }}">
+            <div class="mb-3">
+                <label for="dept_id" class="form-label">Department ID</label>
+                <input type="text" class="form-control" id="dept_id" name="dept_id" required>
+            </div>
+            <div class="mb-3">
+                <label for="attribute" class="form-label">Attribute to Modify</label>
+                <select class="form-select" id="attribute" name="attribute" required>
+                    <option value="name">Department Name</option>
+                    <!-- Add other attributes as needed -->
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="modification" class="form-label">New Value</label>
+                <input type="text" class="form-control" id="modification" name="modification" required>
+            </div>
+            <input type="hidden" name="action" value="modify">
+            <div class="mb-3">
+                <label for="staff_id" class="form-label">Staff ID</label>
+                <input type="text" class="form-control" id="staff_id" name="staff_id" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Modify Department</button>
+        </form>
+    </div>
+</body>
+</html>
