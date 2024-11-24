@@ -874,40 +874,76 @@ def user_info():
 # Requirement 7
 @app.route('/gpa_stats', methods=['GET'])
 def gpa_stats():
-    result = DatabaseOperations.gpa_stats(conn)
-    return jsonify(result)  # Convert result dictionary to JSON
+    operations = DatabaseOperations(get_db_connection()) 
 
-@app.route('/gpa_stats_page', methods=['GET'])
-def gpa_stats_page():
-    return render_template('gpa_stats.html')  # Render the HTML file
-
+    try:
+        # Call the gpa_stats function
+        major_results, department_results, highest_dept, lowest_dept = operations.gpa_stats(conn)
+        
+        # Render the data as plain HTML or send the variables to a template
+        return render_template(
+            'gpa_stats.html',
+            major_results=major_results,
+            department_results=department_results,
+            highest_dept=highest_dept,
+            lowest_dept=lowest_dept
+        )
+    except Exception as e:
+        # Handle unexpected errors
+        return f"An error occurred: {str(e)}", 500
+    
 @app.route('/course_stats', methods=['GET'])
 def course_stats():
-    result = DatabaseOperations.course_stats(conn)
-    return jsonify(result)  # Convert result dictionary to JSON
+    
+    operations = DatabaseOperations(get_db_connection()) 
 
-@app.route('/course_stats_page', methods=['GET'])
-def course_stats_page():
-    return render_template('course_stats.html')  # Render the HTML file
+    try:
+        # Call the course_stats function
+        course_data = operations.course_stats(conn)
+
+        if "error" in course_data:
+            return f"Error: {course_data['error']}", 500
+
+        # Render the course data to the HTML template
+        return render_template('course_stats.html', course_data=course_data)
+    except Exception as e:
+        # Handle unexpected errors
+        return f"An error occurred: {str(e)}", 500
+
 
 @app.route('/instructor_stats', methods=['GET'])
 def instructor_stats():
-    result = DatabaseOperations.instructor_stats(conn)
-    return jsonify(result)  # Convert result dictionary to JSON
+    operations = DatabaseOperations(get_db_connection()) 
 
-@app.route('/instrcutor_stats_page', methods=['GET'])
-def instructor_stats_page():
-    return render_template('instructor_stats.html')  # Render the HTML file
+    try:
+        instrcutor_data = operations.instructor_stats(conn)
+
+        if "error" in instructor_data:
+            return f"Error: {instructor_data['error']}", 500
+
+        # Render the course data to the HTML template
+        return render_template('instructor_stats.html', instructor_data=instructor_data)
+    except Exception as e:
+        # Handle unexpected errors
+        return f"An error occurred: {str(e)}", 500
 
 
 @app.route('/student_stats', methods=['GET'])
 def student_stats():
-    result = DatabaseOperations.student_stats(conn)
-    return jsonify(result)  # Convert result dictionary to JSON
+    operations = DatabaseOperations(get_db_connection()) 
 
-@app.route('/student_stats_page', methods=['GET'])
-def student_stats_page():
-    return render_template('student_stats.html')  # Render the HTML file
+    try:
+        student_data = operations.student_stats(conn)
+
+        if "error" in student_data:
+            return f"Error: {student_data['error']}", 500
+
+        # Render the course data to the HTML template
+        return render_template('student_stats.html', student_data_data=student_data)
+    except Exception as e:
+        # Handle unexpected errors
+        return f"An error occurred: {str(e)}", 500
+
 
 
 #Function to open all routes in the default web browser when the app starts
@@ -956,7 +992,7 @@ def student_stats_page():
 
 if __name__ == "__main__":
     # Automatically open the browser to the Flask app URL
-    webbrowser.open('http://127.0.0.1:5000/gpa_stats_page')
+    webbrowser.open('http://127.0.0.1:5000/student_stats')
     
     # Start the Flask app in debug mode
     app.run(debug=True)
@@ -964,7 +1000,7 @@ if __name__ == "__main__":
 
 if __name__ == "__main__":
     # Automatically open the browser to the Flask app URL
-    webbrowser.open('http://127.0.0.1:5000/login')
+    webbrowser.open('http://127.0.0.1:5000/student_stats')
 
     #visit_all_routes()
     # Start the Flask app in debug mode

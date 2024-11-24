@@ -3,21 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPA Stats</title>
+    <title>Student Statistics</title>
 </head>
 <body>
-    <h1>GPA Stats</h1>
-    <div id="stats-container"></div>
+    <h1>Student Statistics by Major</h1>
 
-    <script>
-        // Fetch JSON data from Flask endpoint and display it
-        fetch('/student_stats')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('stats-container');
-                container.innerHTML = JSON.stringify(data, null, 2); // For testing purposes
-            })
-            .catch(error => console.error('Error fetching student stats:', error));
-    </script>
+    {% for major, data in stats.items() %}
+        <h2>Major: {{ major }}</h2>
+        <ul>
+            {% for student in data.students %}
+                <li>
+                    <strong>Student ID:</strong> {{ student.stud_id }}<br>
+                    <strong>Gender:</strong> {{ student.gender }}<br>
+                    <strong>Total Credits:</strong> {{ student.total_credits }}
+                </li>
+            {% endfor %}
+        </ul>
+        <hr>
+    {% endfor %}
 </body>
 </html>

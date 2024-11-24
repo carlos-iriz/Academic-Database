@@ -1,23 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPA Stats</title>
+    <title>Course Statistics</title>
 </head>
 <body>
-    <h1>GPA Stats</h1>
-    <div id="stats-container"></div>
+    <h1>Course Statistics</h1>
 
-    <script>
-        // Fetch JSON data from Flask endpoint and display it
-        fetch('/course_stats')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('stats-container');
-                container.innerHTML = JSON.stringify(data, null, 2); // For testing purposes
-            })
-            .catch(error => console.error('Error fetching course stats:', error));
-    </script>
+    <h2>Course Enrollment</h2>
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Course ID</th>
+                <th>Course Name</th>
+                <th>Enrollment</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for course in course_results %}
+            <tr>
+                <td>{{ course.course_id }}</td>
+                <td>{{ course.course_name }}</td>
+                <td>{{ course.enrollment }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h2>Most Popular Course</h2>
+    <p>
+        Course ID: {{ most_popular.course_id }}<br>
+        Course Name: {{ most_popular.details.course_name }}<br>
+        Enrollment: {{ most_popular.details.enrollment }}
+    </p>
+
+    <h2>Least Popular Course</h2>
+    <p>
+        Course ID: {{ least_popular.course_id }}<br>
+        Course Name: {{ least_popular.details.course_name }}<br>
+        Enrollment: {{ least_popular.details.enrollment }}
+    </p>
 </body>
 </html>

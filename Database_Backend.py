@@ -445,87 +445,93 @@ class DatabaseOperations:
             )
             rows = cursor.fetchall()
             if not rows:
-                return {"error": "No data found."}
+                return [], [], {}, {}
 
-            # Group and calculate GPAs
             major_grades = {}
             department_grades = {}
+
             for major, department, grade in rows:
                 if grade in grade_mapping:
                     major_grades.setdefault(major, []).append(grade_mapping[grade])
                     department_grades.setdefault(department, []).append(grade_mapping[grade])
 
-            major_results = {
-                major: {
-                    'Highest GPA': max(grades),
-                    'Lowest GPA': min(grades),
-                    'Average GPA': round(sum(grades) / len(grades), 2)
-                } for major, grades in major_grades.items()
-            }
-
-            department_results = {
-                department: round(sum(grades) / len(grades), 2)
-                for department, grades in department_grades.items()
-            }
-
-            highest_dept = max(department_results, key=department_results.get)
-            lowest_dept = min(department_results, key=department_results.get)
-
-            # Return results as a structured dictionary
-            return {
-                "major_results": major_results,
-                "department_results": department_results,
-                "highest_department": {
-                    "name": highest_dept,
-                    "average_gpa": department_results[highest_dept]
-                },
-                "lowest_department": {
-                    "name": lowest_dept,
-                    "average_gpa": department_results[lowest_dept]
+            # Prepare the results
+            major_results = [
+                {
+                    "major": major,
+                    "highest_gpa": max(grades),
+                    "lowest_gpa": min(grades),
+                    "average_gpa": round(sum(grades) / len(grades), 2)
                 }
-            }
+                for major, grades in major_grades.items()
+            ]
+
+            department_results = [
+                {
+                    "department": department,
+                    "average_gpa": round(sum(grades) / len(grades), 2)
+                }
+                for department, grades in department_grades.items()
+            ]
+
+            # Determine the highest and lowest GPA departments
+            highest_dept = max(department_results, key=lambda x: x["average_gpa"])
+            lowest_dept = min(department_results, key=lambda x: x["average_gpa"])
+
+            return major_results, department_results, highest_dept, lowest_dept
 
         except Exception as e:
-            return {"error": str(e)}
+            return [], [], {"error": str(e)}, {}
 
     ###############################################################################
 
     def course_stats(self, conn):
+        # Grade-to-point mapping, including +/- grades
+        grade_mapping = {
+            'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+            'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 
+            'F': 0.0, 'S': 4.0, 'U': 0.0, 'I': 0.0
+        }
+
         try:
             cursor = conn.cursor()
+
+            # Query to fetch course enrollments, grades, and semesters
             cursor.execute(
                 """
-                SELECT c.course_id, c.course_name, COUNT(sc.stud_id) as enrollment 
-                FROM courses c
-                LEFT JOIN studentcourse sc ON c.course_id = sc.course_id
-                GROUP BY c.course_id, c.course_name
+                SELECT sc.course_code, sc.semester, sc.grade
+                FROM studentcourse sc
                 """
             )
             rows = cursor.fetchall()
+
             if not rows:
-                return {"error": "No courses found."}
+                return {}
 
-            course_results = {
-                row[0]: {
-                    "course_name": row[1],
-                    "enrollment": row[2]
-                } for row in rows
-            }
+            # Dictionary to store enrollments and grades by course and semester
+            course_stats = {}
 
-            most_popular = max(course_results.items(), key=lambda x: x[1]["enrollment"])
-            least_popular = min(course_results.items(), key=lambda x: x[1]["enrollment"])
+            for course_code, semester, grade in rows:
+                course_stats.setdefault((course_code, semester), {'enrollments': 0, 'grades': []})
+                course_stats[(course_code, semester)]['enrollments'] += 1
+                if grade in grade_mapping:
+                    course_stats[(course_code, semester)]['grades'].append(grade_mapping[grade])
 
-            return {
-                "course_results": course_results,
-                "most_popular": {
-                    "course_id": most_popular[0],
-                    "details": most_popular[1]
-                },
-                "least_popular": {
-                    "course_id": least_popular[0],
-                    "details": least_popular[1]
-                }
-            }
+            # Calculate average grades for each course and semester
+            results = {}
+            for (course_code, semester), data in course_stats.items():
+                enrollments = data['enrollments']
+                average_grade = (
+                    round(sum(data['grades']) / len(data['grades']), 2)
+                    if data['grades'] else 0
+                )
+                results.setdefault(semester, []).append({
+                    'course_code': course_code,
+                    'enrollments': enrollments,
+                    'average_grade': average_grade
+                })
+
+            return results  # Return organized data by semester
 
         except Exception as e:
             return {"error": str(e)}
@@ -534,40 +540,48 @@ class DatabaseOperations:
     def instructor_stats(self, conn):
         try:
             cursor = conn.cursor()
-            cursor.execute(
-                """
-                SELECT i.instructor_id, i.name, COUNT(sc.stud_id) as students_taught 
-                FROM instructors i
-                LEFT JOIN courses c ON i.instructor_id = c.instructor_id
-                LEFT JOIN studentcourse sc ON c.course_id = sc.course_id
-                GROUP BY i.instructor_id, i.name
-                """
-            )
+
+            # Query to get total students by major for each instructor and course, regardless of semester
+            query = """
+            SELECT i.instructor_id, c.course_code, c.course_name AS course, s.major AS major, 
+            COUNT(DISTINCT s.stud_id) AS total_students
+            FROM instructors i
+            JOIN instructorcourse ic ON i.instructor_id = ic.instructor_id
+            JOIN courses c ON ic.course_code = c.course_code  
+            JOIN studentcourse sc ON ic.course_code = sc.course_code
+            JOIN students s ON sc.stud_id = s.stud_id
+            GROUP BY i.instructor_id, c.course_code, s.major, c.course_name, c.dept_id
+            ORDER BY i.instructor_id, c.course_code, s.major;
+            """
+
+            cursor.execute(query)
             rows = cursor.fetchall()
+
             if not rows:
-                return {"error": "No instructors found."}
+                return {}
 
-            instructor_results = {
-                row[0]: {
-                    "name": row[1],
-                    "students_taught": row[2]
-                } for row in rows
-            }
+            # Group results by instructor and then by course
+            instructor_courses = {}
+            for row in rows:
+                instructor_id, course_code, course_name, major_name, total_students = row
+                if instructor_id not in instructor_courses:
+                    instructor_courses[instructor_id] = {
+                        'instructor_id': instructor_id,
+                        'courses': []
+                    }
+                instructor_courses[instructor_id]['courses'].append({
+                    'course_code': course_code,
+                    'course_name': course_name,
+                    'major_name': major_name,
+                    'total_students': total_students
+                })
 
-            most_active = max(instructor_results.items(), key=lambda x: x[1]["students_taught"])
-
-            return {
-                "instructor_results": instructor_results,
-                "most_active": {
-                    "instructor_id": most_active[0],
-                    "details": most_active[1]
-                }
-            }
+            return instructor_courses
 
         except Exception as e:
             return {"error": str(e)}
 
-  ############################################################################################################
+######################################################################################################   
     def student_stats(self, conn):
         try:
             cursor = conn.cursor()
@@ -586,7 +600,7 @@ class DatabaseOperations:
             rows = cursor.fetchall()
 
             if not rows:
-                return {"status": "No data found.", "data": []}
+                return {"error": "No data found."}
 
             # Group results by major
             major_students = {}
@@ -603,12 +617,16 @@ class DatabaseOperations:
                     'total_credits': total_credits
                 })
 
-            # Return structured data
-            return {"status": "Success", "data": major_students}
+            return major_students
 
         except Exception as e:
-            return {"status": "Error", "message": str(e), "data": []}
-    #/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            return {"error": str(e)}
+
+
+
+
+
+
 
 
 # Main function to initialize and perform database operations
@@ -733,7 +751,8 @@ def main():
         print('Finished making tables')
         # Initialize StaffDatabaseOperations with connection
         operations = DatabaseOperations(conn)
-       
+        results = operations.course_stats(conn)
+        print(results)
        
         
 

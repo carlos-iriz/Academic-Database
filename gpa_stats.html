@@ -1,23 +1,43 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GPA Stats</title>
+    <title>GPA Statistics</title>
 </head>
 <body>
-    <h1>GPA Stats</h1>
-    <div id="stats-container"></div>
+    <h1>GPA Statistics</h1>
 
-    <script>
-        // Fetch JSON data from Flask endpoint and display it
-        fetch('/gpa_stats')
-            .then(response => response.json())
-            .then(data => {
-                const container = document.getElementById('stats-container');
-                container.innerHTML = JSON.stringify(data, null, 2); // For testing purposes
-            })
-            .catch(error => console.error('Error fetching GPA stats:', error));
-    </script>
+    <h2>Major Results</h2>
+    <ul>
+        {% for result in major_results %}
+        <li>
+            Major: {{ result.major }}<br>
+            Highest GPA: {{ result.highest_gpa }}<br>
+            Lowest GPA: {{ result.lowest_gpa }}<br>
+            Average GPA: {{ result.average_gpa }}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Department Results</h2>
+    <ul>
+        {% for dept in department_results %}
+        <li>
+            Department: {{ dept.department }}<br>
+            Average GPA: {{ dept.average_gpa }}
+        </li>
+        {% endfor %}
+    </ul>
+
+    <h2>Highest Department</h2>
+    <p>
+        Department: {{ highest_dept.department }}<br>
+        Average GPA: {{ highest_dept.average_gpa }}
+    </p>
+
+    <h2>Lowest Department</h2>
+    <p>
+        Department: {{ lowest_dept.department }}<br>
+        Average GPA: {{ lowest_dept.average_gpa }}
+    </p>
 </body>
 </html>
