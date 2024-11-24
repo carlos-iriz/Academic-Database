@@ -427,12 +427,13 @@ def log():
     conn = get_db_connection()
     cursor = conn.cursor()
     # Fetch log entries from the database
-    query = "SELECT entry, timestamp, user_id, operationtype, old_data, new_data FROM log ORDER BY timestamp DESC"
+    query = "SELECT * FROM Log ORDER BY timestamp DESC"
     cursor.execute(query)
     logs = cursor.fetchall()
 
     # Pass logs to the template
     return render_template('log.html', logs=logs)
+
 
 
 # Log operation (to be called after any INSERT, UPDATE, DELETE operation)
