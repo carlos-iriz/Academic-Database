@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advisor Functions</title>
+</head>
+<body>
+    <h1>Advisor Portal</h1>
+    
+    <!-- Form to Add Student -->
+    <h2>Add Student to Course</h2>
+    <form action="/add_student" method="POST">
+        <label for="student_id">Student ID:</label>
+        <input type="text" id="student_id" name="student_id" required><br>
+        
+        <label for="course_code">Course Code:</label>
+        <input type="text" id="course_code" name="course_code" required><br>
+        
+        <label for="semester">Semester:</label>
+        <input type="text" id="semester" name="semester" required><br>
+        
+        <label for="year_taken">Year:</label>
+        <input type="number" id="year_taken" name="year_taken" required><br>
+        
+        <label for="grade">Grade:</label>
+        <input type="text" id="grade" name="grade" required><br>
+        
+        <button type="submit">Add Student</button>
+    </form>
+
+    <!-- Form to Drop Student -->
+    <h2>Drop Student from Course</h2>
+    <form action="/drop_student" method="POST">
+        <label for="student_id_drop">Student ID:</label>
+        <input type="text" id="student_id_drop" name="student_id" required><br>
+        
+        <label for="course_code_drop">Course Code:</label>
+        <input type="text" id="course_code_drop" name="course_code" required><br>
+        
+        <label for="semester_drop">Semester:</label>
+        <input type="text" id="semester_drop" name="semester" required><br>
+        
+        <label for="year_taken_drop">Year:</label>
+        <input type="number" id="year_taken_drop" name="year_taken" required><br>
+        
+        <button type="submit">Drop Student</button>
+    </form>
+</body>
+</html>

@@ -6,19 +6,7 @@ from psycopg2.extras import RealDictCursor
 import webbrowser
 import time
 
-from Database_Backend import (
-    User,
-    Students,
-    Instructors,
-    Staff,
-    Advisors,
-    Courses,
-    Departments,
-    Log,
-    StudentCourse,
-    InstructorCourse,
-    DatabaseOperations
-)
+from Database_Backend import *
 
 
 
@@ -33,10 +21,10 @@ app.secret_key = secrets.token_hex(16)
 # Database connection setup
 def get_db_connection():
     conn = psycopg2.connect(
-        host="academic-database-main.chs4cey0uprk.us-east-2.rds.amazonaws.com",
+        host="",
         database="Academic_Database",
         user="postgres",
-        password="pops1234"
+        password=""
     )
     return conn
 
@@ -736,6 +724,8 @@ def student_summary():
         if not dept_result:
             return "Department not found for user.", 404
         dept_id = dept_result[0]
+        print(f"Fetched dept_id {dept_id} for {user_role} with user_id {user_id}")
+
 
         # Fetch all students in the user's department 
         query = """
@@ -747,6 +737,7 @@ def student_summary():
         """
         cursor.execute(query, (dept_id,))
         student_summary_data = cursor.fetchall()
+        print(f"Fetched students: {student_summary_data}")
 
     except Exception as e:
         print(f"Error fetching student summary: {e}")
@@ -824,6 +815,79 @@ def student_summary():
 
 #     # Render the template with student summary data
 #     return render_template('student_summary.html', student_summary=student_summary_data)
+
+
+
+@app.route('/what_if_analysis', methods=['GET', 'POST'])
+def what_if_analysis():
+    # create student object with user ID or whatever to call calculateGPA from databast_backend.py
+    #currGPA = studentObj.calculate_gpa(x, y, z)
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    stud_id = session['username']
+    currGPA = Students(conn, stud_id).calculate_gpa(conn)
+
+    query = """
+        SELECT SUM(credits)
+        FROM StudentCourse
+        WHERE stud_id = %s
+    """
+
+    cursor.execute(query, (stud_id,))
+    result = cursor.fetchone()
+    currCredits = result[0]
+
+    cursor.close()
+    conn.close()
+
+    if request.method == 'POST':
+    # Process What-If analysis calculations here
+        # Scenario 1: Calculate effect on GPA with N additional courses and grades
+
+        numerical_grade_mapping = {
+                'A': 4.0, 'A-': 3.7, 'B+': 3.3, 'B': 3.0, 'B-': 2.7,
+                'C+': 2.3, 'C': 2.0, 'C-': 1.7, 'D+': 1.3, 'D': 1.0, 'F': 0.0
+            }
+        
+
+        # fetch N courses and grades from the HTML side using flask
+        grade_input = request.form.get("grade_input")
+        grades = grade_input.split()
+
+        # take credit inputs too and typecast em into ints
+        credits_input = request.form.get("credit_input")
+        credits = credits_input.split()
+
+        if not grade_input or not credits_input:
+            return "Please enter both grades and credits."
+        
+        try:
+            credits = [int(credit) for credit in credits]
+        except ValueError:
+            return "Invalid credit values entered. Please enter numeric values only."
+        
+        if len(grades) != len(credits):
+            return "The number of grades and credits must match."
+
+        # remap all grades that are inputted
+        numeric_grades = [numerical_grade_mapping[grade[0]] for grade in grades if grade[0] in numerical_grade_mapping]
+
+        # calculate new mini GPA 
+        newGradePts = 0
+        newCreds = 0
+        for n in range(len(numeric_grades)):
+            newGradePts += credits[n] * numeric_grades[n]
+            newCreds += credits[n]
+
+        # redo calculate GPA but include new courses added
+        newGPA = ((currGPA * currCredits) + newGradePts) / (currCredits + newCreds) 
+
+        calculated_data = "{0:.2f}".format(newGPA)
+
+
+        return render_template('what_if_results.html', results=calculated_data)
+    return render_template('what_if_analysis.html', gpa = currGPA, creds = currCredits)
 
 
 # Student Summary Route
@@ -942,6 +1006,130 @@ def user_info():
     
 #     # Start the Flask app in debug mode
 #     app.run(debug=True)
+
+
+@app.route('/staff_add_drop_modify', methods=['GET'])
+def staff_add_drop_modify():
+    return render_template('staff_add_drop_modify.html')
+
+@app.route('/process_staff_action', methods=['POST'])
+def process_staff_action():
+    action = request.form.get('action')
+    attribute = request.form.get('attribute')
+    modification = request.form.get('modification')
+    course_code = request.form.get('course_code')
+    instructor_id = request.form.get('instructor_id')
+    student_id = request.form.get('student_id')
+    staff_id = username
+
+    # Instance of your database_operations class
+    conn = get_db_connection()
+
+    db_ops = DatabaseOperations(conn)
+
+    if action == 'add_course':
+        staff_add_course(db_ops, course_code, request.form.get('course_name'), request.form.get('credits'), staff_id)
+    elif action == 'remove_course':
+        staff_remove_course(db_ops, course_code, staff_id)
+    elif action == 'modify_course':
+        staff_modify_course(db_ops, attribute, modification, course_code, staff_id)
+    elif action == 'add_instructor':
+        staff_add_instructor(db_ops, instructor_id, request.form.get('username'), request.form.get('email'),
+                             request.form.get('password'), request.form.get('hired_sem'),
+                             request.form.get('instructor_phone'), staff_id)
+    elif action == 'remove_instructor':
+        staff_remove_instructor(db_ops, instructor_id, staff_id)
+    elif action == 'modify_instructor':
+        staff_modify_instructor(db_ops, attribute, modification, instructor_id, staff_id)
+    elif action == 'add_student':
+        staff_add_student(db_ops, student_id, request.form.get('username'), request.form.get('email'),
+                          request.form.get('password'), request.form.get('gender'),
+                          request.form.get('major'), request.form.get('dept_id'), staff_id)
+    elif action == 'remove_student':
+        staff_remove_student(db_ops, student_id, staff_id)
+    elif action == 'modify_student':
+        staff_modify_student(db_ops, attribute, modification, student_id, staff_id)
+    elif action == 'modify_department':
+        staff_modify_department(db_ops, attribute, modification, request.form.get('dept_id'), staff_id)
+    elif action == 'assign_course':
+        staff_assign_course_to_instructor(db_ops, instructor_id, request.form.get('course_id'), staff_id)
+    else:
+        return "Invalid action", 400
+
+    return redirect(url_for('staff_add_drop_modify'))
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 2
+@app.route('/advisor_add_drop', methods=['GET'])
+def advisor_add_drop():
+    return render_template('advisor_add_drop.html')
+
+@app.route('/add_student', methods=['POST'])
+def add_student():
+    conn = get_db_connection()
+    operations = DatabaseOperations(conn)
+    try:
+        # Get form data
+        student_id = request.form['student_id']
+        course_code = request.form['course_code']
+        semester = request.form['semester']
+        year_taken = int(request.form['year_taken'])
+        grade = request.form['grade']
+        advisor_id = username
+        
+        # Call your function
+        operations.advisor_add_student(student_id, course_code, semester, year_taken, grade, advisor_id)
+        print('Added to Course')
+        # Flash success message if needed
+    except Exception as e:
+        print(f'Error: {str(e)}')
+        # Flash error message if needed
+    
+    return redirect('/advisor_add_drop')
+
+@app.route('/drop_student', methods=['POST'])
+def drop_student():
+    conn = get_db_connection()
+    operations = DatabaseOperations(conn)
+    try:
+        # Get form data
+        student_id = request.form['student_id']
+        course_code = request.form['course_code']
+        semester = request.form['semester']
+        year_taken = int(request.form['year_taken'])
+        advisor_id = username
+        
+        # Call your function
+        operations.advisor_drop_student(student_id, course_code, semester, year_taken, advisor_id)
+        print('Dropped from Course')
+        # Flash success message if needed
+    except Exception as e:
+        print(f'Error: {str(e)}')
+        # Flash error message if needed
+    
+    return redirect('/advisor_add_drop')
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 3
+# Done already in pages attached to student and instructor
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 4
+# Covered by database with primary keys
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 5
+# Logging is already called within functions to add each log
+# Log.html covers already
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 6
+# 
+
+#/////////////////////////////////////////////////////////////////////////////
+# Req 7
+
+
 
 if __name__ == "__main__":
     # Automatically open the browser to the Flask app URL
