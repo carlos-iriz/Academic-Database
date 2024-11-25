@@ -1,66 +1,75 @@
-
-
 {% block content %}
-<div class="container py-5 text-center">
-    <h1 class="display-4 text-primary mb-4">Staff Management Directory</h1>
-    <p class="lead text-muted mb-5">Choose an area to manage:</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Staff Management Directory</title>
+    <!-- Link to Bootstrap CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
 
-    <div class="row justify-content-center">
-        <!-- Button to navigate to Manage Courses -->
-        <div class="col-md-3 mb-4">
-            <a href="{{ url_for('staff_manage_courses') }}" class="btn btn-primary btn-lg w-100 py-3 shadow-lg border-0 rounded-pill hover-scale">Manage Courses</a>
-        </div>
-        <!-- Button to navigate to Manage Instructors -->
-        <div class="col-md-3 mb-4">
-            <a href="{{ url_for('staff_manage_instructors') }}" class="btn btn-secondary btn-lg w-100 py-3 shadow-lg border-0 rounded-pill hover-scale">Manage Instructors</a>
-        </div>
-        <!-- Button to navigate to Manage Students -->
-        <div class="col-md-3 mb-4">
-            <a href="{{ url_for('staff_manage_students') }}" class="btn btn-success btn-lg w-100 py-3 shadow-lg border-0 rounded-pill hover-scale">Manage Students</a>
-        </div>
-        <!-- Button to navigate to Manage Departments -->
-        <div class="col-md-3 mb-4">
-            <a href="{{ url_for('staff_manage_departments') }}" class="btn btn-warning btn-lg w-100 py-3 shadow-lg border-0 rounded-pill hover-scale">Manage Departments</a>
+        .container {
+            max-width: 500px;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #343a40;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .text-muted {
+            font-size: 1.1em;
+            margin-bottom: 25px;
+        }
+
+        .btn-custom {
+            width: 100%;
+            font-size: 1.1em;
+            padding: 12px;
+            margin-top: 10px;
+        }
+
+        .shadow-lg {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="d-flex justify-content-center align-items-center vh-100">
+        <div class="container text-center">
+            <div class="header-title">Staff Management Directory</div>
+            <p class="text-muted mb-4">Choose an area to manage:</p>
+
+            <div class="form-group">
+                <a href="{{ url_for('staff_manage_courses') }}" class="btn btn-primary btn-custom shadow-lg">Manage Courses</a>
+            </div>
+            <div class="form-group">
+                <a href="{{ url_for('staff_manage_instructors') }}" class="btn btn-secondary btn-custom shadow-lg">Manage Instructors</a>
+            </div>
+            <div class="form-group">
+                <a href="{{ url_for('staff_manage_students') }}" class="btn btn-success btn-custom shadow-lg">Manage Students</a>
+            </div>
+            <div class="form-group">
+                <a href="{{ url_for('staff_manage_departments') }}" class="btn btn-warning btn-custom shadow-lg">Manage Departments</a>
+            </div>
         </div>
     </div>
-</div>
 
-<style>
-    
-    /* Text Styling */
-    h1.display-4 {
-        font-weight: bold;
-        text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.3);
-    }
-
-    p.lead {
-        font-size: 1.25rem;
-        font-weight: 300;
-        text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.3);
-    }
-
-    /* Custom hover effect */
-    .hover-scale:hover {
-        transform: scale(1.05);
-        transition: all 0.3s ease-in-out;
-    }
-
-    /* Button styling */
-    .btn-lg {
-        font-size: 1.2rem;
-        padding: 15px;
-    }
-
-    .shadow-lg {
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-    }
-
-    /* Mobile Responsive */
-    @media (max-width: 768px) {
-        .col-md-3 {
-            margin-bottom: 20px;
-        }
-    }
-</style>
-
+    <!-- Link to Bootstrap JS and dependencies (Popper.js and jQuery) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
 {% endblock %}

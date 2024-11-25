@@ -1,108 +1,152 @@
-
 {% block content %}
-<div class="container py-4">
-    <h1 class="mb-4 text-center">Manage Students</h1>
-    
-    <!-- Add Student Form -->
-    <div class="card mb-4">
-        <div class="card-header">Add Student</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="add">
-                <div class="col-md-4">
-                    <label for="user_id" class="form-label">Student ID</label>
-                    <input type="number" id="user_id" name="user_id" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="username" class="form-label">Username</label>
-                    <input type="text" id="username" name="username" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="gender" class="form-label">Gender</label>
-                    <select id="gender" name="gender" class="form-select" required>
-                        <option value="M">Male</option>
-                        <option value="F">Female</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="major" class="form-label">Major</label>
-                    <input type="text" id="major" name="major" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="dept_id" class="form-label">Department ID</label>
-                    <input type="number" id="dept_id" name="dept_id" class="form-control" required>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-primary">Add Student</button>
-                </div>
-            </form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Students</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .header-title {
+            font-size: 1.75em;
+            font-weight: bold;
+            color: #343a40;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .btn-custom {
+            width: 100%;
+            font-size: 1.1em;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        .shadow-lg {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container d-flex flex-column justify-content-center align-items-center py-5 min-vh-100">
+        <div class="header-title mb-4">Manage Students</div>
+
+        <!-- Add Student Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Add Student</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="add">
+
+                    <div class="col-md-4">
+                        <label for="user_id" class="form-label">Student ID</label>
+                        <input type="text" id="user_id" name="user_id" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" id="username" name="username" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="gender" class="form-label">Gender</label>
+                        <select id="gender" name="gender" class="form-select" required>
+                            <option selected disabled>Choose gender...</option>
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="major" class="form-label">Major</label>
+                        <input type="text" id="major" name="major" class="form-control" required>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-primary btn-custom shadow-lg">Add Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Remove Student Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Remove Student</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="remove">
+                    <div class="col-md-6">
+                        <label for="stud_id_remove" class="form-label">Student ID</label>
+                        <select id="stud_id_remove" name="stud_id" class="form-select" required>
+                            <option selected disabled>Choose a student...</option>
+                            {% for student in student %}
+                            <option value="{{ student[0] }}">{{ student[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-danger btn-custom shadow-lg">Remove Student</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modify Student Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Modify Student</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="modify">
+                    <div class="col-md-4">
+                        <label for="stud_id_modify" class="form-label">Student ID</label>
+                        <select id="stud_id_modify" name="stud_id" class="form-select" required>
+                            <option selected disabled>Choose a student...</option>
+                            {% for student in student %}
+                            <option value="{{ student[0] }}">{{ student[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="attribute" class="form-label">Attribute</label>
+                        <select id="attribute" name="attribute" class="form-select" required>
+                            <option value="gender">Gender</option>
+                            <option value="major">Major</option>
+                            <option value="email">Email</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="modification" class="form-label">New Value</label>
+                        <input type="text" id="modification" name="modification" class="form-control" required>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-warning btn-custom shadow-lg">Modify Student</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Remove Student Form -->
-    <div class="card mb-4">
-        <div class="card-header">Remove Student</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="remove">
-                <div class="col-md-6">
-                    <label for="stud_id" class="form-label">Student ID</label>
-                    <select id="stud_id" name="stud_id" class="form-select" required>
-                        <option selected disabled>Choose a student...</option>
-                        {% for student in students %}
-                        <option value="{{ student.user_id }}">{{ student.user_id }} - {{ student.username }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-danger">Remove Student</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modify Student Form -->
-    <div class="card mb-4">
-        <div class="card-header">Modify Student</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="modify">
-                <div class="col-md-4">
-                    <label for="stud_id_modify" class="form-label">Student ID</label>
-                    <select id="stud_id_modify" name="stud_id" class="form-select" required>
-                        <option selected disabled>Choose a student...</option>
-                        {% for student in students %}
-                        <option value="{{ student.user_id }}">{{ student.user_id }} - {{ student.username }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="attribute" class="form-label">Attribute</label>
-                    <select id="attribute" name="attribute" class="form-select" required>
-                        <option value="username">Username</option>
-                        <option value="email">Email</option>
-                        <option value="major">Major</option>
-                        <option value="gender">Gender</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="modification" class="form-label">New Value</label>
-                    <input type="text" id="modification" name="modification" class="form-control" required>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-warning">Modify Student</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+    <!-- Link to Bootstrap JS and dependencies (Popper.js and jQuery) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/5.1.3/js/bootstrap.min.js"></script>
+</body>
+</html>
 {% endblock %}

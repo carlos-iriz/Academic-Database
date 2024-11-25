@@ -1,98 +1,177 @@
-
 {% block content %}
-<div class="container py-4">
-    <h1 class="mb-4 text-center">Manage Instructors</h1>
-    
-    <!-- Add Instructor Form -->
-    <div class="card mb-4">
-        <div class="card-header">Add Instructor</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="add">
-                <div class="col-md-4">
-                    <label for="instructor_id" class="form-label">Instructor ID</label>
-                    <input type="number" id="instructor_id" name="instructor_id" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="username" class="form-label">Username</label>
-                    <input type="text" id="username" name="username" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="hired_sem" class="form-label">Hired Semester</label>
-                    <input type="text" id="hired_sem" name="hired_sem" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="instructor_phone" class="form-label">Phone</label>
-                    <input type="text" id="instructor_phone" name="instructor_phone" class="form-control" required>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-primary">Add Instructor</button>
-                </div>
-            </form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Instructors</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .header-title {
+            font-size: 1.75em;
+            font-weight: bold;
+            color: #343a40;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .btn-custom {
+            width: 100%;
+            font-size: 1.1em;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        .shadow-lg {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container d-flex flex-column justify-content-center align-items-center py-5 min-vh-100">
+        <div class="header-title mb-4">Manage Instructors</div>
+
+        <!-- Add Instructor Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Add Instructor</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="add">
+                    <div class="col-md-6">
+                        <label for="instructor_id" class="form-label">Instructor ID</label>
+                        <input type="text" id="instructor_id" name="instructor_id" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" id="username" name="username" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" id="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" id="password" name="password" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="hired_sem" class="form-label">Hired Semester</label>
+                        <input type="text" id="hired_sem" name="hired_sem" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="instructor_phone" class="form-label">Phone</label>
+                        <input type="text" id="instructor_phone" name="instructor_phone" class="form-control" required>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-primary btn-custom shadow-lg">Add Instructor</button>
+                    </div>
+                </form>
+            </div>
         </div>
+
+        <!-- Remove Instructor Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Remove Instructor</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="remove">
+                    <div class="col-md-6">
+                        <label for="instructor_id_remove" class="form-label">Instructor ID</label>
+                        <select id="instructor_id_remove" name="instructor_id" class="form-select" required>
+                            <option selected disabled>Choose an instructor...</option>
+                            {% for instructor in instructors %}
+                            <option value="{{ instructor[0] }}">{{ instructor[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-danger btn-custom shadow-lg">Remove Instructor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modify Instructor Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Modify Instructor</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="modify">
+                    <div class="col-md-6">
+                        <label for="instructor_id_modify" class="form-label">Instructor ID</label>
+                        <select id="instructor_id_modify" name="instructor_id" class="form-select" required>
+                            <option selected disabled>Choose an instructor...</option>
+                            {% for instructor in instructors %}
+                            <option value="{{ instructor[0] }}">{{ instructor[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="attribute" class="form-label">Attribute</label>
+                        <select id="attribute" name="attribute" class="form-select" required>
+                            <option value="hired_sem">Hired Semester</option>
+                            <option value="instructor_phone">Phone</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="modification" class="form-label">New Value</label>
+                        <input type="text" id="modification" name="modification" class="form-control" required>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-warning btn-custom shadow-lg">Modify Instructor</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Assign Course to Instructor Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Assign Course to Instructor</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="assign">
+                    <div class="col-md-6">
+                        <label for="instructor_id_assign" class="form-label">Instructor ID</label>
+                        <select id="instructor_id_assign" name="instructor_id" class="form-select" required>
+                            <option selected disabled>Choose an instructor...</option>
+                            {% for instructor in instructors %}
+                            <option value="{{ instructor[0] }}">{{ instructor[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="course_code" class="form-label">Course Code</label>
+                        <select id="course_code" name="course_code" class="form-select" required>
+                            <option selected disabled>Choose a course...</option>
+                            {% for course in courses_instructor %}
+                            <option value="{{ course[0] }}">{{ course[0] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-success btn-custom shadow-lg">Assign Course</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Remove Instructor Form -->
-    <div class="card mb-4">
-        <div class="card-header">Remove Instructor</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="remove">
-                <div class="col-md-6">
-                    <label for="instructor_id_remove" class="form-label">Instructor ID</label>
-                    <select id="instructor_id_remove" name="instructor_id" class="form-select" required>
-                        <option selected disabled>Choose an instructor...</option>
-                        {% for instructor in instructors %}
-                        <option value="{{ instructor.instructor_id }}">{{ instructor.username }} - {{ instructor.email }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-danger">Remove Instructor</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modify Instructor Form -->
-    <div class="card mb-4">
-        <div class="card-header">Modify Instructor</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="modify">
-                <div class="col-md-4">
-                    <label for="instructor_id_modify" class="form-label">Instructor ID</label>
-                    <select id="instructor_id_modify" name="instructor_id" class="form-select" required>
-                        <option selected disabled>Choose an instructor...</option>
-                        {% for instructor in instructors %}
-                        <option value="{{ instructor.instructor_id }}">{{ instructor.username }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="attribute" class="form-label">Attribute</label>
-                    <select id="attribute" name="attribute" class="form-select" required>
-                        <option value="hired_sem">Hired Semester</option>
-                        <option value="instructor_phone">Phone</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="modification" class="form-label">New Value</label>
-                    <input type="text" id="modification" name="modification" class="form-control" required>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-warning">Modify Instructor</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+    <!-- Link to Bootstrap JS and dependencies (Popper.js and jQuery) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/5.1.3/js/bootstrap.min.js"></script>
+</body>
+</html>
 {% endblock %}

@@ -1,87 +1,134 @@
-
-
 {% block content %}
-<div class="container py-4">
-    <h1 class="mb-4 text-center">Manage Courses</h1>
-    
-    <!-- Add Course Form -->
-    <div class="card mb-4">
-        <div class="card-header">Add Course</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="add">
-                <div class="col-md-4">
-                    <label for="course_code" class="form-label">Course Code</label>
-                    <input type="text" id="course_code" name="course_code" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="course_name" class="form-label">Course Name</label>
-                    <input type="text" id="course_name" name="course_name" class="form-control" required>
-                </div>
-                <div class="col-md-4">
-                    <label for="credits" class="form-label">Credits</label>
-                    <input type="number" id="credits" name="credits" class="form-control" required>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-primary">Add Course</button>
-                </div>
-            </form>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Courses</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .header-title {
+            font-size: 1.75em;
+            font-weight: bold;
+            color: #343a40;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .form-label {
+            font-weight: 500;
+        }
+        .btn-custom {
+            width: 100%;
+            font-size: 1.1em;
+            padding: 12px;
+            margin-top: 10px;
+        }
+        .shadow-lg {
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        .card-header {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container d-flex flex-column justify-content-center align-items-center py-5 min-vh-100">
+        <div class="header-title mb-4">Manage Courses</div>
+
+        <!-- Add Course Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Add Course</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="add">
+
+                    <div class="col-md-4">
+                        <label for="course_code" class="form-label">Course Code</label>
+                        <input type="text" id="course_code" name="course_code" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="course_name" class="form-label">Course Name</label>
+                        <input type="text" id="course_name" name="course_name" class="form-control" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="credits" class="form-label">Credits</label>
+                        <input type="number" id="credits" name="credits" class="form-control" required>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-primary btn-custom shadow-lg">Add Course</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Remove Course Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Remove Course</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="remove">
+                    <div class="col-md-6">
+                        <label for="course_code_remove" class="form-label">Course Code</label>
+                        <select id="course_code_remove" name="course_code" class="form-select" required>
+                            <option selected disabled>Choose a course...</option>
+                            {% for course in courses %}
+                            <option value="{{ course[0] }}">{{ course[0] }} - {{ course[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-danger btn-custom shadow-lg">Remove Course</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Modify Course Form -->
+        <div class="card mb-4 w-100 shadow-lg">
+            <div class="card-header">Modify Course</div>
+            <div class="card-body">
+                <form method="POST" class="row g-3">
+                    <input type="hidden" name="action" value="modify">
+                    <div class="col-md-4">
+                        <label for="course_code_modify" class="form-label">Course Code</label>
+                        <select id="course_code_modify" name="course_code" class="form-select" required>
+                            <option selected disabled>Choose a course...</option>
+                            {% for course in courses %}
+                            <option value="{{ course[0] }}">{{ course[0] }} - {{ course[1] }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="attribute" class="form-label">Attribute</label>
+                        <select id="attribute" name="attribute" class="form-select" required>
+                            <option value="course_name">Course Name</option>
+                            <option value="credits">Credits</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="modification" class="form-label">New Value</label>
+                        <input type="text" id="modification" name="modification" class="form-control" required>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-warning btn-custom shadow-lg">Modify Course</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Remove Course Form -->
-    <div class="card mb-4">
-        <div class="card-header">Remove Course</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="remove">
-                <div class="col-md-6">
-                    <label for="course_code_remove" class="form-label">Course Code</label>
-                    <select id="course_code_remove" name="course_code" class="form-select" required>
-                        <option selected disabled>Choose a course...</option>
-                        {% for course in courses %}
-                            <option value="{{ course[0] }}">{{ course[0] }} - {{ course[1] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-danger">Remove Course</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Modify Course Form -->
-    <div class="card mb-4">
-        <div class="card-header">Modify Course</div>
-        <div class="card-body">
-            <form method="POST" class="row g-3">
-                <input type="hidden" name="action" value="modify">
-                <div class="col-md-4">
-                    <label for="course_code_modify" class="form-label">Course Code</label>
-                    <select id="course_code_modify" name="course_code" class="form-select" required>
-                        <option selected disabled>Choose a course...</option>
-                        {% for course in courses %}
-                            <option value="{{ course[0] }}">{{ course[0] }} - {{ course[1] }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="attribute" class="form-label">Attribute</label>
-                    <select id="attribute" name="attribute" class="form-select" required>
-                        <option value="course_name">Course Name</option>
-                        <option value="credits">Credits</option>
-                    </select>
-                </div>
-                <div class="col-md-4">
-                    <label for="modification" class="form-label">New Value</label>
-                    <input type="text" id="modification" name="modification" class="form-control" required>
-                </div>
-                <div class="col-12 text-end">
-                    <button type="submit" class="btn btn-warning">Modify Course</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+    <!-- Link to Bootstrap JS and dependencies (Popper.js and jQuery) -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/5.1.3/js/bootstrap.min.js"></script>
+</body>
+</html>
 {% endblock %}
